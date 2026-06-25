@@ -179,7 +179,7 @@ async def cmd_api_prompt(message: Message):
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🧠 MiMo", callback_data="api_model:mimo/mimo-auto"),
+            [InlineKeyboardButton(text="🧠 MiMo", callback_data="api_model:xiaomi/mimo-v2.5"),
              InlineKeyboardButton(text="🤖 DeepSeek", callback_data="api_model:deepseek/deepseek-chat")],
             [InlineKeyboardButton(text="💡 GPT-4o", callback_data="api_model:openai/gpt-4o-mini"),
              InlineKeyboardButton(text="🎭 Claude", callback_data="api_model:anthropic/claude-haiku-4.5")],
@@ -199,7 +199,7 @@ async def cmd_api_prompt(message: Message):
         model_name = model_name.strip()
         question = question.strip()
         model_map = {
-            "mimo": "mimo/mimo-auto",
+            "mimo": "xiaomi/mimo-v2.5",
             "deepseek": "deepseek/deepseek-chat",
             "gpt": "openai/gpt-4o-mini",
             "gpt4o": "openai/gpt-4o-mini",

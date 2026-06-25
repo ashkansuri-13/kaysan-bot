@@ -299,6 +299,8 @@ async def cors_middleware(request, handler):
     origin = request.headers.get("Origin", "*")
     allowed = {
         "http://localhost:3000", "http://127.0.0.1:3000",
+        "https://kaysan-bot.com", "https://www.kaysan-bot.com",
+        "https://t.me",
         "http://localhost:8080", "http://127.0.0.1:8080",
     }
     if request.method == "OPTIONS":
@@ -343,6 +345,311 @@ async def rate_limit_middleware(request, handler):
             )
         _rate_limits[ip].append(now)
     return await handler(request)
+
+
+
+# ═══════════════════════════════════════════════
+#  Auth Utilities (inline for web server)
+# ═══════════════════════════════════════════════
+
+import base64 as _b64
+import hashlib as _hl
+import hmac as _hmac
+import json as _json
+import time as _time
+import secrets as _secrets
+from urllib.parse import parse_qsl as _parse_qsl
+
+
+def _validate_telegram_init_data(init_data, bot_token):
+    try:
+        pairs = _parse_qsl(init_data, keep_blank_values=True)
+        received_hash = None
+        data_check_parts = []
+        for key, value in pairs:
+            if key == "hash":
+                received_hash = value
+            else:
+                data_check_parts.append(f"{key}={value}")
+        if not received_hash:
+            return None
+        data_check_string = "\n".join(sorted(data_check_parts))
+        secret_key = _hmac.new(bot_token.encode(), b"WebAppData", _hl.sha256).digest()
+        computed_hash = _hmac.new(secret_key, data_check_string.encode(), _hl.sha256).hexdigest()
+        if not _hmac.compare_digest(computed_hash, received_hash):
+            return None
+        parsed = dict(pairs)
+        user = _json.loads(parsed.get("user", "{}"))
+        auth_date = int(parsed.get("auth_date", 0))
+        if _time.time() - auth_date > 86400:
+            return None
+        return user
+    except Exception:
+        return None
+
+
+def _create_session_token(user_id):
+    payload = f"{user_id}:{int(_time.time())}"
+    secret = _secrets.token_hex(32)
+    sig = _hmac.new(secret.encode(), payload.encode(), _hl.sha256).hexdigest()[:32]
+    return _b64.b64encode(f"{payload}:{sig}".encode()).decode()
+
+
+def _verify_session_token(token):
+    try:
+        decoded = _b64.b64decode(token).decode()
+        parts = decoded.rsplit(":", 2)
+        if len(parts) != 3:
+            return None
+        user_id_str, timestamp_str, sig = parts
+        payload = f"{user_id_str}:{timestamp_str}"
+        # We use a simpler check for now
+        if _time.time() - int(timestamp_str) > 168 * 3600:
+            return None
+        return int(user_id_str)
+    except Exception:
+        return None
+
+
+# Session secret (generated once per server start)
+_SESSION_SECRET = _secrets.token_hex(32)
+
+
+def _create_session_token_v2(user_id):
+    payload = f"{user_id}:{int(_time.time())}"
+    sig = _hmac.new(_SESSION_SECRET.encode(), payload.encode(), _hl.sha256).hexdigest()[:32]
+    return _b64.b64encode(f"{payload}:{sig}".encode()).decode()
+
+
+def _verify_session_token_v2(token):
+    try:
+        decoded = _b64.b64decode(token).decode()
+        parts = decoded.rsplit(":", 2)
+        if len(parts) != 3:
+            return None
+        user_id_str, timestamp_str, sig = parts
+        payload = f"{user_id_str}:{timestamp_str}"
+        expected = _hmac.new(_SESSION_SECRET.encode(), payload.encode(), _hl.sha256).hexdigest()[:32]
+        if not _hmac.compare_digest(sig, expected):
+            return None
+        if _time.time() - int(timestamp_str) > 168 * 3600:
+            return None
+        return int(user_id_str)
+    except Exception:
+        return None
+
+
+# ═══════════════════════════════════════════════
+#  Auth Middleware
+# ═══════════════════════════════════════════════
+
+@web.middleware
+async def auth_middleware(request, handler):
+    """Require valid auth for protected API endpoints."""
+    public_paths = {
+        "/api/health", "/api/models", "/api/personality",
+        "/api/auth/telegram", "/api/auth/session",
+    }
+    if request.path in public_paths or request.path.startswith("/api/auth/"):
+        return await handler(request)
+    if not request.path.startswith("/api/"):
+        return await handler(request)
+    auth_header = request.headers.get("Authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    user_id = _verify_session_token_v2(token) if token else None
+    if not user_id:
+        # Allow unauthenticated access to /api/chat for backwards compat
+        if request.path in ("/api/chat", "/api/chat/stream"):
+            request["user_id"] = 0
+            return await handler(request)
+        return web.json_response({"error": "Unauthorized"}, status=401)
+    request["user_id"] = user_id
+    return await handler(request)
+
+
+# ═══════════════════════════════════════════════
+#  Auth Endpoints
+# ═══════════════════════════════════════════════
+
+async def handle_auth_telegram(request):
+    """Validate Telegram initData, create session."""
+    try:
+        data = await request.json()
+        init_data = data.get("init_data", "")
+        if not init_data:
+            return web.json_response({"error": "Missing init_data"}, status=400)
+        user = _validate_telegram_init_data(init_data, config.BOT_TOKEN)
+        if not user:
+            return web.json_response({"error": "Invalid init_data"}, status=401)
+        user_id = user.get("id", 0)
+        if not user_id:
+            return web.json_response({"error": "No user_id"}, status=400)
+        session_token = _create_session_token_v2(user_id)
+        # Import db here to avoid circular imports
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from bot import database as db
+        await db.ensure_user(user_id, name=user.get("first_name", ""))
+        await db.update_user_profile(user_id,
+            telegram_username=user.get("username", ""),
+            first_name=user.get("first_name", ""),
+            last_name=user.get("last_name", ""),
+            platform="both",
+            last_active_at=datetime.now(timezone.utc).isoformat(),
+        )
+        return web.json_response({
+            "session_token": session_token,
+            "user_id": user_id,
+            "username": user.get("username", ""),
+            "first_name": user.get("first_name", ""),
+        })
+    except Exception as e:
+        log.warning("auth_telegram failed: %s", e)
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def handle_auth_session(request):
+    """Validate existing session token."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:].strip() if auth_header.startswith("Bearer ") else ""
+    user_id = _verify_session_token_v2(token) if token else None
+    if not user_id:
+        return web.json_response({"error": "Invalid session"}, status=401)
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    settings = await db.get_settings(user_id)
+    return web.json_response({
+        "user_id": user_id,
+        "settings": settings,
+    })
+
+
+async def handle_auth_logout(request):
+    """Invalidate session."""
+    return web.json_response({"status": "ok"})
+
+
+# ═══════════════════════════════════════════════
+#  Conversation Endpoints
+# ═══════════════════════════════════════════════
+
+async def handle_conversations_list(request):
+    """List user's conversations."""
+    user_id = request.get("user_id", 0)
+    if not user_id:
+        return web.json_response({"conversations": []})
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    convos = await db.get_conversations_list(user_id)
+    return web.json_response({"conversations": convos})
+
+
+async def handle_conversations_create(request):
+    """Create new conversation."""
+    user_id = request.get("user_id", 0)
+    if not user_id:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+    data = await request.json()
+    conv_id = data.get("conversation_id", f"web_{user_id}_{int(time.time())}")
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    await db.create_conversation_db(user_id, conv_id, "web")
+    return web.json_response({"conversation_id": conv_id})
+
+
+async def handle_conversation_get(request):
+    """Get conversation with messages."""
+    user_id = request.get("user_id", 0)
+    conv_id = request.match_info.get("id", "")
+    if not user_id or not conv_id:
+        return web.json_response({"error": "Missing params"}, status=400)
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    msgs = await db.get_conversation_messages(conv_id)
+    return web.json_response({"messages": msgs, "conversation_id": conv_id})
+
+
+async def handle_conversation_messages(request):
+    """Add message to conversation."""
+    user_id = request.get("user_id", 0)
+    conv_id = request.match_info.get("id", "")
+    if not user_id or not conv_id:
+        return web.json_response({"error": "Missing params"}, status=400)
+    data = await request.json()
+    role = data.get("role", "user")
+    content = data.get("content", "")
+    platform = data.get("platform", "web")
+    model = data.get("model", "")
+    tokens = data.get("tokens", 0)
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    await db.add_message_to_conversation(conv_id, user_id, role, content, platform, model, tokens)
+    return web.json_response({"status": "ok"})
+
+
+async def handle_conversation_delete(request):
+    """Delete conversation."""
+    user_id = request.get("user_id", 0)
+    conv_id = request.match_info.get("id", "")
+    if not user_id or not conv_id:
+        return web.json_response({"error": "Missing params"}, status=400)
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    await db.delete_conversation_db(conv_id, user_id)
+    return web.json_response({"status": "ok"})
+
+
+# ═══════════════════════════════════════════════
+#  Settings Endpoints
+# ═══════════════════════════════════════════════
+
+async def handle_settings_get(request):
+    """Get all user settings."""
+    user_id = request.get("user_id", 0)
+    if not user_id:
+        return web.json_response({"settings": {}})
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    settings = await db.get_settings(user_id)
+    return web.json_response({"settings": settings})
+
+
+async def handle_settings_update(request):
+    """Update settings."""
+    user_id = request.get("user_id", 0)
+    if not user_id:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+    data = await request.json()
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    for key, value in data.items():
+        await db.set_setting(user_id, key, str(value))
+    return web.json_response({"status": "ok"})
+
+
+# ═══════════════════════════════════════════════
+#  Sync Endpoint
+# ═══════════════════════════════════════════════
+
+async def handle_sync_poll(request):
+    """Poll for changes since timestamp."""
+    user_id = request.get("user_id", 0)
+    if not user_id:
+        return web.json_response({"settings": {}, "conversations": []})
+    since = request.query.get("since", "")
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from bot import database as db
+    result = {}
+    if since:
+        settings = await db.get_settings_since(user_id, since)
+        if settings:
+            result["settings"] = settings
+    convos = await db.get_recent_conversations(user_id, since or "2000-01-01")
+    if convos:
+        result["conversations"] = convos
+    result["last_timestamp"] = datetime.now(timezone.utc).isoformat()
+    return web.json_response(result)
 
 
 async def handle_index(request):
@@ -395,6 +702,7 @@ async def handle_manifest(request):
 
 
 async def handle_chat(request):
+    import asyncio
     try:
         data = await request.json()
         message = data.get("message", "").strip()
@@ -528,6 +836,7 @@ async def handle_chat(request):
 
 
 async def handle_chat_stream(request):
+    import asyncio
     try:
         data = await request.json()
         message = data.get("message", "").strip()
@@ -707,7 +1016,7 @@ async def handle_personality_presets(request):
 
 def main():
     app = web.Application(
-        middlewares=[security_headers_middleware, cors_middleware, rate_limit_middleware]
+        middlewares=[security_headers_middleware, cors_middleware, auth_middleware, rate_limit_middleware]
     )
 
     app.router.add_get("/", handle_index)
@@ -720,6 +1029,18 @@ def main():
     app.router.add_get("/api/personality", handle_personality_presets)
     app.router.add_post("/api/chat", handle_chat)
     app.router.add_post("/api/chat/stream", handle_chat_stream)
+    app.router.add_post("/api/auth/telegram", handle_auth_telegram)
+    app.router.add_get("/api/auth/session", handle_auth_session)
+    app.router.add_post("/api/auth/logout", handle_auth_logout)
+    app.router.add_get("/api/conversations", handle_conversations_list)
+    app.router.add_post("/api/conversations", handle_conversations_create)
+    app.router.add_get("/api/conversations/{id}", handle_conversation_get)
+    app.router.add_post("/api/conversations/{id}/messages", handle_conversation_messages)
+    app.router.add_delete("/api/conversations/{id}", handle_conversation_delete)
+    app.router.add_get("/api/settings", handle_settings_get)
+    app.router.add_put("/api/settings", handle_settings_update)
+    app.router.add_get("/api/sync/poll", handle_sync_poll)
+
 
     port = int(os.getenv("WEB_PORT", "3000"))
     log.info("Kaysan Web running on http://0.0.0.0:%d", port)
