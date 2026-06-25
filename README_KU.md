@@ -16,8 +16,35 @@
 
 </div>
 
----
 
+## 📸 ئەسکرینشاتەکان
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="assets/screenshots/01-bot-logo.png" width="200"><br><b>لوگۆی بۆت</b></td>
+<td align="center"><img src="assets/screenshots/02-main-menu.jpg" width="200"><br><b>مینیوی سەرەکی</b></td>
+<td align="center"><img src="assets/screenshots/03-chat-interface.jpg" width="200"><br><b>ڕووکاری چت</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/04-model-selection.jpg" width="200"><br><b>هەڵبژاردنی مۆدێل</b></td>
+<td align="center"><img src="assets/screenshots/05-settings.jpg" width="200"><br><b>ڕێکخستنەکان</b></td>
+<td align="center"><img src="assets/screenshots/06-language-menu.jpg" width="200"><br><b>مینیوی زمان</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/07-image-generation.jpg" width="200"><br><b>دروستکردنی وێنە</b></td>
+<td align="center"><img src="assets/screenshots/08-code-assistant.jpg" width="200"><br><b>یاریدەدەری کۆد</b></td>
+<td align="center"><img src="assets/screenshots/09-miniapp.jpg" width="200"><br><b>مینی ئەپ</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/10-web-dashboard.jpg" width="200"><br><b>داشبۆردی وێب</b></td>
+<td align="center"><img src="assets/screenshots/11-analytics.jpg" width="200"><br><b>ئەنالیتیکس</b></td>
+<td align="center"><img src="assets/screenshots/12-bot-response.png" width="200"><br><b>وەڵامی بۆت</b></td>
+</tr>
+</table>
+</div>
+
+---
 ## ✨ تایبەتیەکان
 
 ### 🤖 چتی زیرەکی دەستکرد

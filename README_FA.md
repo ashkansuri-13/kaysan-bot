@@ -16,8 +16,35 @@
 
 </div>
 
----
 
+## 📸 اسکرین‌شات‌ها
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="assets/screenshots/01-bot-logo.png" width="200"><br><b>لوگوی ربات</b></td>
+<td align="center"><img src="assets/screenshots/02-main-menu.jpg" width="200"><br><b>منوی اصلی</b></td>
+<td align="center"><img src="assets/screenshots/03-chat-interface.jpg" width="200"><br><b>رابط چت</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/04-model-selection.jpg" width="200"><br><b>انتخاب مدل</b></td>
+<td align="center"><img src="assets/screenshots/05-settings.jpg" width="200"><br><b>تنظیمات</b></td>
+<td align="center"><img src="assets/screenshots/06-language-menu.jpg" width="200"><br><b>منوی زبان</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/07-image-generation.jpg" width="200"><br><b>تولید تصویر</b></td>
+<td align="center"><img src="assets/screenshots/08-code-assistant.jpg" width="200"><br><b>دستیار کدنویسی</b></td>
+<td align="center"><img src="assets/screenshots/09-miniapp.jpg" width="200"><br><b>مینی‌اپ</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/10-web-dashboard.jpg" width="200"><br><b>داشبورد وب</b></td>
+<td align="center"><img src="assets/screenshots/11-analytics.jpg" width="200"><br><b>آمار</b></td>
+<td align="center"><img src="assets/screenshots/12-bot-response.png" width="200"><br><b>پاسخ ربات</b></td>
+</tr>
+</table>
+</div>
+
+---
 ## ✨ قابلیت‌ها
 
 ### 🤖 چت هوش مصنوعی

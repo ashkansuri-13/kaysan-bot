@@ -17,8 +17,35 @@
 
 </div>
 
----
 
+## 📸 Screenshots
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="assets/screenshots/01-bot-logo.png" width="200"><br><b>Bot Logo</b></td>
+<td align="center"><img src="assets/screenshots/02-main-menu.jpg" width="200"><br><b>Main Menu</b></td>
+<td align="center"><img src="assets/screenshots/03-chat-interface.jpg" width="200"><br><b>Chat Interface</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/04-model-selection.jpg" width="200"><br><b>Model Selection</b></td>
+<td align="center"><img src="assets/screenshots/05-settings.jpg" width="200"><br><b>Settings</b></td>
+<td align="center"><img src="assets/screenshots/06-language-menu.jpg" width="200"><br><b>Language Menu</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/07-image-generation.jpg" width="200"><br><b>Image Generation</b></td>
+<td align="center"><img src="assets/screenshots/08-code-assistant.jpg" width="200"><br><b>Code Assistant</b></td>
+<td align="center"><img src="assets/screenshots/09-miniapp.jpg" width="200"><br><b>Mini App</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/screenshots/10-web-dashboard.jpg" width="200"><br><b>Web Dashboard</b></td>
+<td align="center"><img src="assets/screenshots/11-analytics.jpg" width="200"><br><b>Analytics</b></td>
+<td align="center"><img src="assets/screenshots/12-bot-response.png" width="200"><br><b>Bot Response</b></td>
+</tr>
+</table>
+</div>
+
+---
 ## ✨ Features
 
 ### 🤖 AI-Powered Chat
