@@ -1,0 +1,16 @@
+# Kaysan AI bot
+aiogram>=3.13
+aiohttp>=3.9
+aiosqlite>=0.20.0
+python-dotenv>=1.0.1
+groq>=0.11.0
+SpeechRecognition>=3.10
+pydub>=0.25.1
+edge-tts>=7.0.0
+ddgs>=1.0.0
+pypdf>=4.0.0
+sentry-sdk>=2.0.0
+python-docx>=1.0.0
+jdatetime>=5.0.0
+qrcode[pil]>=7.4
+Pillow>=10.0.0

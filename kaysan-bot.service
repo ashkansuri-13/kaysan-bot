@@ -1,0 +1,16 @@
+[Unit]
+Description=Kaysan AI Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/kaysan-bot
+ExecStart=/root/kaysan-bot/venv/bin/python /root/kaysan-bot/run.py
+Restart=always
+RestartSec=5
+User=root
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
