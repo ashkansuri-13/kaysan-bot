@@ -132,6 +132,20 @@ function detectSystemTheme() {
 // ============================================
 // Sidebar (Personality)
 // ============================================
+
+function initHomeButton() {
+  const homeBtn = document.getElementById(home-btn);
+  if (homeBtn) {
+    homeBtn.onclick = () => {
+      showWelcome();
+      clearMessages();
+      currentConvId = null;
+      chatHistory = [];
+      saveSettings();
+    };
+  }
+}
+
 function initSidebar() {
   const panel = document.getElementById('personality-panel');
   const backdrop = document.getElementById('sidebar-backdrop');
