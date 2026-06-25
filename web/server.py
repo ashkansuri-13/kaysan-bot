@@ -701,6 +701,26 @@ async def handle_manifest(request):
     return web.json_response(manifest)
 
 
+async def handle_sitemap(request):
+    sitemap_path = WEB_DIR / "sitemap.xml"
+    if sitemap_path.exists():
+        resp = web.FileResponse(sitemap_path)
+        resp.content_type = "application/xml; charset=utf-8"
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
+    return web.Response(status=404)
+
+
+async def handle_robots(request):
+    robots_path = WEB_DIR / "robots.txt"
+    if robots_path.exists():
+        resp = web.FileResponse(robots_path)
+        resp.content_type = "text/plain; charset=utf-8"
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
+    return web.Response(status=404)
+
+
 async def handle_chat(request):
     import asyncio
     try:
@@ -1024,6 +1044,8 @@ def main():
     app.router.add_get("/app.js", handle_js)
     app.router.add_get("/logo.png", handle_logo)
     app.router.add_get("/manifest.json", handle_manifest)
+    app.router.add_get("/sitemap.xml", handle_sitemap)
+    app.router.add_get("/robots.txt", handle_robots)
     app.router.add_get("/api/health", handle_health)
     app.router.add_get("/api/models", handle_models)
     app.router.add_get("/api/personality", handle_personality_presets)

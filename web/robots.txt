@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+
+Sitemap: https://kaysan.okala.help/sitemap.xml
+
+# Kaysan AI Bot - Multi-language AI Telegram Bot
+# Kurdish Sorani / Persian / English
+# https://github.com/ashkansuri-13/kaysan-bot

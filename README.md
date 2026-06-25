@@ -1,13 +1,21 @@
+<div align="center">
+
 # 🧠 Kaysan AI Bot v2.05
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
-[![aiogram](https://img.shields.io/badge/aiogram-3.29-green.svg)](https://docs.aiogram.dev)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](Dockerfile)
-[![Kubernetes](https://img.shields.io/badge/K8s-Ready-blue.svg)](k8s/)
+**Multi-language AI Telegram Bot — 50+ Features**
 
-> **Multi-language AI Telegram Bot** — Kurdish Sorani, Persian, English  
-> Powered by OpenRouter multi-model AI with 50+ features
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![aiogram 3](https://img.shields.io/badge/aiogram-3-0077B5?style=for-the-badge&logo=python&logoColor=white)](https://docs.aiogram.dev)
+[![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
+[![Tests](https://img.shields.io/badge/Tests-829+-brightgreen?style=for-the-badge)](tests/)
+[![K8s](https://img.shields.io/badge/K8s-Ready-blue?style=for-the-badge)](k8s/)
+
+**[فارسی](README_FA.md) | English | [کوردی](README_KU.md)**
+
+> Kurdish Sorani / Persian / English — Powered by OpenRouter multi-model AI
+
+</div>
 
 ---
 

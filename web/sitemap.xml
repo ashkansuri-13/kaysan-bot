@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <url>
+    <loc>https://kaysan.okala.help/</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fa" href="https://kaysan.okala.help/?lang=fa" />
+    <xhtml:link rel="alternate" hreflang="ku" href="https://kaysan.okala.help/?lang=ku" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://kaysan.okala.help/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaysan.okala.help/" />
+  </url>
+
+  <url>
+    <loc>https://kaysan.okala.help/api/health</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
