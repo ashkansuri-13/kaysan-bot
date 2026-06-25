@@ -10,18 +10,26 @@ from .. import config, openrouter
 log = logging.getLogger("kaysan.image")
 
 STYLE_PROMPTS = {
-    "anime": "anime style, high quality, detailed, vibrant colors",
-    "realistic": "photorealistic, high resolution, detailed, professional photography",
-    "cartoon": "cartoon style, colorful, fun, playful, 3D render",
-    "watercolor": "watercolor painting, soft colors, artistic, beautiful",
-    "oil_painting": "oil painting, classical art, detailed brushstrokes, masterpiece",
-    "pixel_art": "pixel art style, retro, 16-bit, nostalgic",
-    "3d_render": "3D render, octane render, highly detailed, cinematic lighting",
-    "comic": "comic book style, bold lines, dynamic, Marvel DC style",
-    "minimalist": "minimalist design, clean, simple, modern, elegant",
-    "cyberpunk": "cyberpunk style, neon lights, futuristic, dark atmosphere",
-    "fantasy": "fantasy art, magical, ethereal, epic, Lord of the Rings style",
-    "sketch": "pencil sketch, black and white, detailed, artistic drawing",
+    "anime": "anime style, high quality, detailed, vibrant colors, Studio Ghibli inspired, beautiful lighting",
+    "realistic": "photorealistic, high resolution, detailed, professional photography, 8k, sharp focus",
+    "cartoon": "cartoon style, colorful, fun, playful, 3D render, Pixar style, expressive characters",
+    "watercolor": "watercolor painting, soft colors, artistic, beautiful, delicate brushstrokes, paper texture",
+    "oil_painting": "oil painting, classical art, detailed brushstrokes, masterpiece, Renaissance style",
+    "pixel_art": "pixel art style, retro, 16-bit, nostalgic, vibrant colors, clean pixels",
+    "3d_render": "3D render, octane render, highly detailed, cinematic lighting, volumetric fog",
+    "comic": "comic book style, bold lines, dynamic, Marvel DC style, dramatic lighting",
+    "minimalist": "minimalist design, clean, simple, modern, elegant, white space",
+    "cyberpunk": "cyberpunk style, neon lights, futuristic, dark atmosphere, rain, reflections",
+    "fantasy": "fantasy art, magical, ethereal, epic, Lord of the Rings style, glowing elements",
+    "sketch": "pencil sketch, black and white, detailed, artistic drawing, crosshatching",
+    "photography": "professional photography, DSLR, bokeh, natural lighting, 85mm lens",
+    "cinematic": "cinematic shot, film grain, dramatic lighting, anamorphic lens flare",
+    "digital_art": "digital art, concept art, artstation, trending, highly detailed",
+    "pixel_retro": "retro pixel art, 8-bit, old school gaming, nostalgic, vibrant",
+    "abstract": "abstract art, geometric shapes, bold colors, modern art, gallery quality",
+    "portrait": "portrait photography, soft lighting, shallow depth of field, professional",
+    "landscape": "landscape photography, golden hour, wide angle, dramatic sky, 8k",
+    "macro": "macro photography, extreme close-up, sharp detail, beautiful bokeh",
 }
 
 STYLE_KEYWORDS = {

@@ -214,7 +214,7 @@ def tools_menu_kb(lang: str = "fa") -> InlineKeyboardMarkup:
 
 
 def image_menu_kb(lang: str = "fa") -> InlineKeyboardMarkup:
-    """منوی ساخت تصویر."""
+    """منوی ساخت تصویر با ۲۰ سبک."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📷 واقعی", callback_data="style:realistic"),
          InlineKeyboardButton(text="🎨 انیمیشنی", callback_data="style:anime")],
@@ -228,6 +228,14 @@ def image_menu_kb(lang: str = "fa") -> InlineKeyboardMarkup:
          InlineKeyboardButton(text="🌆 سایبرپانک", callback_data="style:cyberpunk")],
         [InlineKeyboardButton(text="🧙 فانتزی", callback_data="style:fantasy"),
          InlineKeyboardButton(text="✏️ اسکچ", callback_data="style:sketch")],
+        [InlineKeyboardButton(text="📸 عکاسی", callback_data="style:photography"),
+         InlineKeyboardButton(text="🎬 سینمایی", callback_data="style:cinematic")],
+        [InlineKeyboardButton(text="🎮 دیجیتال", callback_data="style:digital_art"),
+         InlineKeyboardButton(text="🔢 رترو", callback_data="style:pixel_retro")],
+        [InlineKeyboardButton(text="🌀 انتزاعی", callback_data="style:abstract"),
+         InlineKeyboardButton(text="👤 پرتره", callback_data="style:portrait")],
+        [InlineKeyboardButton(text="🏔️ منظره", callback_data="style:landscape"),
+         InlineKeyboardButton(text="🔬 ماکرو", callback_data="style:macro")],
         [InlineKeyboardButton(text="◀️ بازگشت", callback_data="menu:back")],
     ])
 

@@ -9,7 +9,8 @@ from aiogram import Bot
 from aiogram.enums import ParseMode
 from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from .. import config, database as db, openrouter, router
+from .. import config, database as db, openrouter
+from ..prompt_enhancer import enhance_prompt_engine, detect_prompt_type, get_optimal_model, get_optimal_temperature, get_optimal_max_tokens, router
 from ..keyboards import answer_kb, limit_kb
 from ..services import image as image_svc
 from ..texts import IDENTITY_REPLY, SYSTEM_PROMPTS, t

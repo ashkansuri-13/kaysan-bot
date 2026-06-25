@@ -15,6 +15,9 @@ from aiohttp import web
 from agent import detect_feature_request, get_feature_response
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from bot.prompt_enhancer import enhance_prompt_engine, detect_prompt_type, get_optimal_model, get_optimal_temperature, get_optimal_max_tokens
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from bot.services.image import generate as generate_image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -485,16 +488,22 @@ async def handle_chat(request):
         if slider_instructions:
             system_prompt += "\n\nCustom adjustments:\n" + "\n".join(slider_instructions)
 
+        enhanced_message, prompt_type = await enhance_prompt_engine(message, lang, intent)
+        
+        optimal_models = get_optimal_model(prompt_type)
+        optimal_temp = get_optimal_temperature(prompt_type)
+        optimal_tokens = get_optimal_max_tokens(prompt_type)
+        
         messages = [{"role": "system", "content": system_prompt}]
         for msg in history[-10:]:
             role = msg.get("role", "user")
             content = msg.get("content", "")
             if role in ("user", "assistant") and content:
                 messages.append({"role": role, "content": content})
-        messages.append({"role": "user", "content": message})
+        messages.append({"role": "user", "content": enhanced_message})
 
-        max_tok = config.MAX_TOKENS_BY_INTENT.get(intent, config.MAX_TOKENS_CHAT)
-        temperature = config.TEMP_BY_INTENT.get(intent, 0.7)
+        max_tok = min(optimal_tokens, config.MAX_TOKENS_BY_INTENT.get(intent, config.MAX_TOKENS_CHAT))
+        temperature = optimal_temp
 
         reply, usage = await asyncio.wait_for(
             openrouter.chat(messages, models, intent=intent,
