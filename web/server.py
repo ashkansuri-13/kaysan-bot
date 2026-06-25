@@ -13,6 +13,9 @@ from pathlib import Path
 
 from aiohttp import web
 from agent import detect_feature_request, get_feature_response
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from bot.services.image import generate as generate_image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from bot import config, openrouter, router
@@ -403,6 +406,30 @@ async def handle_chat(request):
 
         feature_type = detect_feature_request(message, lang)
         if feature_type:
+            if feature_type == "image_request":
+                import asyncio
+                try:
+                    style_prompt = message.lower().replace("sakht", "").replace("ankas", "").replace("tasvir", "").strip()
+                    if not style_prompt:
+                        style_prompt = "a beautiful scene"
+                    img_data = await asyncio.wait_for(
+                        generate_image(style_prompt, "realistic"), timeout=120
+                    )
+                    if img_data:
+                        import base64
+                        img_b64 = base64.b64encode(img_data).decode()
+                        return web.json_response({
+                            "reply": f"image:{img_b64}",
+                            "model": "pollinations",
+                            "tokens": 0,
+                        })
+                except Exception as e:
+                    pass
+                return web.json_response({
+                    "reply": "image generation failed, try again",
+                    "model": "agent",
+                    "tokens": 0,
+                })
             feature_response = get_feature_response(feature_type, lang)
             if feature_response:
                 return web.json_response({
@@ -506,6 +533,34 @@ async def handle_chat_stream(request):
 
         feature_type = detect_feature_request(message, lang)
         if feature_type:
+            if feature_type == "image_request":
+                import asyncio
+                try:
+                    style_prompt = message.lower().replace("sakht", "").replace("ankas", "").replace("tasvir", "").strip()
+                    if not style_prompt:
+                        style_prompt = "a beautiful scene"
+                    img_data = await asyncio.wait_for(
+                        generate_image(style_prompt, "realistic"), timeout=120
+                    )
+                    if img_data:
+                        import base64
+                        img_b64 = base64.b64encode(img_data).decode()
+                        response = web.StreamResponse(
+                            status=200,
+                            headers={
+                                "Content-Type": "text/event-stream",
+                                "Cache-Control": "no-cache",
+                                "X-Accel-Buffering": "no",
+                            },
+                        )
+                        await response.prepare(request)
+                        chunk_data = json.dumps({"chunk": f"image:{img_b64}"})
+                        await response.write(("data: " + chunk_data + "\n\n").encode())
+                        await response.write(b"data: [DONE]\n\n")
+                        await response.drain()
+                        return response
+                except Exception as e:
+                    pass
             feature_response = get_feature_response(feature_type, lang)
             if feature_response:
                 response = web.StreamResponse(

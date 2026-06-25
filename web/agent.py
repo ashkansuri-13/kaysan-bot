@@ -7,9 +7,9 @@ CAPABILITY_KEYWORDS = {
 }
 
 IMAGE_KEYWORDS = {
-    "ku": ["wene", "wene drrust bke", "weney", "ankas", "tasvir"],
-    "fa": ["ankas", "tasvir", "vine", "sakht ankas", "tolid tasvir", "generate image", "create image"],
-    "en": ["image", "picture", "photo", "draw", "generate image", "create image", "make image"]
+    "ku": ["wene", "wene drrust bke", "weney", "ankas", "tasvir", "surat"],
+    "fa": ["ankas", "tasvir", "vine", "sakht ankas", "tolid tasvir", "generate image", "create image", "bekesh", "bkes", "bka", "saz"],
+    "en": ["image", "picture", "photo", "draw", "generate image", "create image", "make image", "paint", "sketch"]
 }
 
 VOICE_KEYWORDS = {
@@ -31,21 +31,16 @@ def detect_feature_request(message, lang):
             return "voice_request"
     return None
 
-def get_feature_response(feature_type, lang):
+def get_feature_response(feature_type, lang, message=""):
     if feature_type == "capabilities":
         if lang == "ku":
-            return "taybetiiyekan:\n\nchat: detuanit soal bkit\nimage: l telegeram bnese\nvoice: l telegeram bnese\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
+            return "taybetiiyekan:\n\nchat: detuanit soal bkit\nimage: detuanit wene drrost bkit\nvoice: l telegeram bnese\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
         elif lang == "fa":
-            return "ghabliyatha:\n\nchat: har soali beporsid\nimage: dar telegeram befrestid\nvoice: dar telegeram befrestid\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
+            return "ghabliyatha:\n\nchat: har soali beporsid\nimage: ankas befrestid, mitunam besazam\nvoice: dar telegeram befrestid\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
         else:
-            return "capabilities:\n\nchat: ask any question\nimage: send via Telegram\nvoice: send via Telegram\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
+            return "capabilities:\n\nchat: ask any question\nimage: I can generate images!\nvoice: send via Telegram\nqr: /qr\nshort: /short\ncalc: /calc\nweather: /weather\ntranslate: /translate\nnews: /news\nmeme: /meme\nquiz: /quiz\njoke: /joke"
     elif feature_type == "image_request":
-        if lang == "ku":
-            return "wene drrost krdn ba AI:\n\nl yerda natanit wene drrost bkit. telegeram aya! @ashkan_surii"
-        elif lang == "fa":
-            return "sakht ankas ba AI:\n\ndinja emkanat nist. be telegeram beravid! @ashkan_surii"
-        else:
-            return "generate AI images:\n\nyou cant create images here. go to telegram! @ashkan_surii"
+        return None
     elif feature_type == "voice_request":
         if lang == "ku":
             return "nardnii deng:\n\nl yerda natanit deng bnese. telegeram aya! @ashkan_surii"

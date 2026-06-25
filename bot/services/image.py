@@ -133,8 +133,15 @@ async def generate(prompt: str, style: str = "realistic") -> bytes | None:
     full_prompt = f"{enhanced}, {style_suffix}"
 
     apis = [
+        ("Pollinations-nanobanana", _pollinations_nanobanana),
         ("Pollinations-sana", _pollinations_sana),
         ("Pollinations-flux", _pollinations_flux),
+        ("Pollinations-flux-schnell", _pollinations_flux_schnell),
+        ("Pollinations-flux-dev", _pollinations_flux_dev),
+        ("Pollinations-dalle-nano", _pollinations_dalle_nano),
+        ("Pollinations-stable", _pollinations_stable),
+        ("Pollinations-realistic", _pollinations_realistic),
+        ("Pollinations-anime", _pollinations_anime),
         ("Pollinations-turbo", _pollinations_turbo),
         ("Together-free", _together_free),
         ("HuggingFace-sdxl", _huggingface_sdxl),
@@ -204,6 +211,97 @@ async def _pollinations_turbo(prompt: str) -> bytes | None:
                     return data
     return None
 
+
+
+async def _pollinations_nanobanana(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=nano-banana&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_flux_schnell(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=flux-schnell&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_flux_dev(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=flux-dev&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_dalle_nano(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=dall-e-3-nano&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_stable(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=stable-diffusion&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_realistic(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=realistic&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
+
+
+async def _pollinations_anime(prompt: str) -> bytes | None:
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=1024&nologo=true&model=anime&enhance=true&seed={seed}"
+    timeout = aiohttp.ClientTimeout(total=120)
+    async with aiohttp.ClientSession(timeout=timeout) as s:
+        async with s.get(url) as r:
+            if r.status == 200:
+                data = await r.read()
+                if data and len(data) > 1000:
+                    return data
+    return None
 
 async def _together_free(prompt: str) -> bytes | None:
     """Together.ai free tier."""
