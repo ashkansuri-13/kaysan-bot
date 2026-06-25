@@ -115,42 +115,110 @@ async def cmd_start(message: Message):
         return
     lang = await db.get_lang(uid)
 
-    # دکمه‌های سریع برای کاربر جدید
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-    quick_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💬 از من بپرس", callback_data="quick:ask"),
-         InlineKeyboardButton(text="🎨 عکس بساز", callback_data="quick:image")],
-        [InlineKeyboardButton(text="🔄 ترجمه کن", callback_data="quick:translate"),
-         InlineKeyboardButton(text="🧠 کوییز", callback_data="quick:quiz")],
-        [InlineKeyboardButton(text="😄 لطیفه بگو", callback_data="quick:joke"),
-         InlineKeyboardButton(text="📌 یادداشت", callback_data="quick:note")],
-    ])
-
+    from ..keyboards import main_menu_kb
     welcome = t(lang, "welcome").format(name=user.first_name or user.full_name or "دۆست")
-    await message.answer(welcome, parse_mode=ParseMode.HTML, reply_markup=quick_kb)
+    await message.answer(welcome, parse_mode=ParseMode.HTML, reply_markup=main_menu_kb(lang))
 
 
-@router.callback_query(F.data.startswith("quick:"))
-async def cb_quick(call: CallbackQuery):
+@router.callback_query(F.data.startswith("menu:"))
+async def cb_menu(call: CallbackQuery):
     uid = call.from_user.id
     lang = await db.get_lang(uid)
     action = call.data.split(":")[1]
     await call.answer()
-
+    
+    from ..keyboards import main_menu_kb, tools_menu_kb, image_menu_kb, back_kb
+    
+    if action == "back":
+        await call.message.edit_text(
+            t(lang, "welcome").format(name=call.from_user.first_name or "دوست"),
+            parse_mode=ParseMode.HTML,
+            reply_markup=main_menu_kb(lang)
+        )
+        return
+    
     prompts = {
-        "ask": "هی Kaysan! یه سؤال دارم...",
-        "image": "/image یه منظره زیبا",
+        "chat": "هی Kaysan! یه سؤال دارم...",
+        "image": None,
+        "voice": None,
+        "tools": None,
+        "group": None,
+        "fun": None,
+        "settings": None,
+        "ai": None,
+        "search": "جستجو کن: ",
+        "notes": "/note اولین یادداشت من",
         "translate": "/translate سلام حالت چطوره",
+        "news": "/news",
+        "weather": "/weather",
+        "stock": "/stock بیتکوین",
+        "qr": "/qr https://example.com",
+        "password": "/password",
+        "calc": "/calc 2+2",
+        "meme": "/meme",
         "quiz": "/quiz",
         "joke": "/joke",
-        "note": "/note اولین یادداشت من",
+        "fal": "/fal",
+        "challenge": "/challenge",
+        "expense": "/expense",
+        "habit": "/habit",
+        "travel": "/travel کردستان",
+        "recipe": "/recipe",
+        "flashcard": "/flashcard",
     }
-    if action in prompts:
+    
+    if action == "tools":
+        await call.message.edit_text(
+            "🔧 ابزارهای کیسان:",
+            reply_markup=tools_menu_kb(lang)
+        )
+        return
+    
+    if action == "image":
+        await call.message.edit_text(
+            "🎨 سبک تصویر را انتخاب کنید:",
+            reply_markup=image_menu_kb(lang)
+        )
+        return
+    
+    if action in prompts and prompts[action]:
         try:
             await call.message.delete()
         except Exception:
             pass
         await core.process_text(call.message, prompts[action], lang, uid=uid)
+
+
+@router.callback_query(F.data.startswith("tool:"))
+async def cb_tool(call: CallbackQuery):
+    uid = call.from_user.id
+    lang = await db.get_lang(uid)
+    tool = call.data.split(":")[1]
+    await call.answer()
+    
+    tool_prompts = {
+        "qr": "/qr",
+        "short": "/short",
+        "calc": "/calc",
+        "exchange": "/exchange",
+        "password": "/password",
+        "screenshot": "/screenshot",
+        "stock": "/stock",
+        "weather": "/weather",
+        "news": "/news",
+        "translate": "/translate",
+        "summarize": "/summarize",
+        "recipe": "/recipe",
+        "travel": "/travel",
+        "flashcard": "/flashcard",
+    }
+    
+    if tool in tool_prompts:
+        try:
+            await call.message.delete()
+        except Exception:
+            pass
+        await core.process_text(call.message, tool_prompts[tool], lang, uid=uid)
 
 
 @router.message(Command("help"))
