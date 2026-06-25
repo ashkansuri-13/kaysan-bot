@@ -343,18 +343,26 @@ async def rate_limit_middleware(request, handler):
 
 
 async def handle_index(request):
-    return web.FileResponse(WEB_DIR / "index.html")
+    resp = web.FileResponse(WEB_DIR / "index.html")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 async def handle_css(request):
     resp = web.FileResponse(WEB_DIR / "style.css")
     resp.content_type = "text/css; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
     return resp
 
 
 async def handle_js(request):
     resp = web.FileResponse(WEB_DIR / "app.js")
     resp.content_type = "application/javascript; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
     return resp
 
 
