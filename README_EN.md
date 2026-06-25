@@ -2,11 +2,13 @@
 
 # 🧠 Kaysan AI Bot
 
-**Telegram AI Bot — 80+ Features**
+**Telegram AI Bot — 60+ Features**
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
+[![Tests](https://img.shields.io/badge/Tests-829+-brightgreen?style=for-the-badge)](tests/)
+[![Aiogram](https://img.shields.io/badge/Aiogram-3-0077B5?style=for-the-badge&logo=python&logoColor=white)](https://docs.aiogram.dev/)
 
 [فارسی](README_FA.md) | **English** | [کوردی](README_KU.md)
 
@@ -14,11 +16,67 @@
 
 ---
 
-## 📋 Introduction
+## 📸 Screenshots
 
-Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, DeepSeek, Llama, Qwen, Gemma) via OpenRouter. It supports **3 languages** (Kurdish Sorani, Persian, English) and includes **80+ features** spanning AI chat, media processing, group management, utility tools, and entertainment.
+> Screenshots coming soon! Join our channel to see the bot in action: [@ashkan_surii](https://t.me/ashkan_surii)
 
-## ✨ Key Features
+| Chat | Group Management | Mini App |
+|------|-----------------|----------|
+| *AI-powered conversations* | *Auto moderation & tools* | *Glassmorphism UI* |
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Language** | Python 3.12 |
+| **Bot Framework** | Aiogram 3 |
+| **Database** | SQLite (WAL mode) |
+| **Cache** | Redis |
+| **AI Provider** | OpenRouter |
+| **Voice** | Groq Whisper |
+| **Container** | Docker |
+| **Monitoring** | Prometheus |
+| **Web Server** | aiohttp |
+
+---
+
+## 🏛️ Architecture
+
+```
+┌─────────────┐
+│  Telegram    │
+│  Users       │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Aiogram 3  │  ← Message Router
+│  Dispatcher │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Handlers   │  ← 20+ Command Handlers
+│  & Filters  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐
+│  AI Engine  │────▶│  OpenRouter │
+│  (Intent)   │     │  Multi-Model│
+└──────┬──────┘     └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│  SQLite DB  │  ← User Data & History
+└─────────────┘
+```
+
+---
+
+## ✨ Features
 
 ### 🤖 AI Chat & Intelligence
 - **Multi-model chat** — GPT, DeepSeek, Llama, Qwen, Gemma via OpenRouter
@@ -26,7 +84,6 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 - **3-language support** — Kurdish Sorani, Persian, English with auto-detection
 - **Multiple modes** — Teacher, Programmer, Friend
 - **Conversation memory** — remembers context across messages
-- **Long context support** — analyze large documents and files
 - **Streaming responses** — real-time AI output
 
 ### 🎨 Media & Images
@@ -35,7 +92,7 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 - **AI image generation** — create images from text prompts
 - **Text-to-image** — convert text to beautiful visuals
 - **Meme generator** — create custom memes with AI
-- **File analysis** — supports PDF, DOCX, TXT, and text files
+- **File analysis** — supports PDF, DOCX, TXT
 
 ### 🔧 20+ Utility Tools
 
@@ -45,7 +102,7 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 | `/short` | Shorten URL |
 | `/screenshot` | Website screenshot |
 | `/password` | Generate secure password |
-| `/calc` | Safe calculator (no eval) |
+| `/calc` | Safe calculator |
 | `/exchange` | Currency conversion |
 | `/stock` | Stock & crypto prices |
 | `/meme` | Create meme |
@@ -63,28 +120,34 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 | `/habit` | Habit tracker |
 
 ### 👥 Group Management
-- **Auto welcome & goodbye** — customizable messages for new/leaving members
+- **Auto welcome & goodbye** — customizable messages
 - **Spam filter** — auto-delete spam and promotional links
 - **Bad words filter** — auto-delete inappropriate messages
 - **Anti-flood** — prevent message flooding
 - **Slow Mode** — set delay between messages
 - **Quiet hours** — disable bot during specific hours
-- **Admin panel from DM** — manage groups without Telegram admin privileges
+- **Admin panel from DM** — manage groups without Telegram admin
 - **Auto-reply to mentions** — smart answers to questions
 - **Auto-translate** — translate foreign messages automatically
-- **Auto-pin** — pin important messages
 - **Group quiz** — trivia competitions
 - **Smart polls** — AI-powered polls
 - **Group stats** — member count and activity tracking
-- **Group rules** — set and display rules
-- **Message report** — send reports to admins
 - **Tag all** — message all members
+
+### 👑 Admin Dashboard
+- **User Management** — View, ban, unban users
+- **Broadcast Messages** — Send messages to all users
+- **Usage Analytics** — Track messages, costs, popular commands
+- **Subscription Management** — Grant/revoke premium access
+- **AI Model Control** — Test and monitor AI models
+- **System Monitoring** — Health checks, uptime, metrics
+- **Backup Control** — Database backup management
 
 ### 🎮 Entertainment
 - **Quiz** — trivia with multiple choice options
 - **Riddles** — engaging brain teasers
 - **Jokes** — funny and clean humor
-- **Hafez Fal** — Persian poetry fortune telling
+- **Hafez Fal** — Persian poetry fortune
 - **Number guessing game** — fun interactive game
 - **Daily challenge** — varied daily challenges
 
@@ -96,27 +159,58 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 - **Automatic database backup**
 - **Health Check & Readiness Probe** — port 8080
 - **Prometheus Metrics** — port 9090
-- **Network Monitor** — auto-restart on failures
+
+---
+
+## 👑 Admin Dashboard
+
+Full-featured admin panel accessible via Telegram DM:
+
+| Feature | Description |
+|---------|-------------|
+| User Management | View, ban, unban users |
+| Broadcast Messages | Send messages to all users |
+| Usage Analytics | Track messages, costs, popular commands |
+| Revenue Statistics | Monitor bot expenses |
+| Subscription Management | Grant/revoke premium access |
+| AI Model Control | Test and monitor AI models |
+| System Monitoring | Health checks, uptime, metrics |
+| Error Logs | Track and debug issues |
+| Backup Control | Database backup management |
+
+---
+
+## 🔌 Integrations
+
+| Service | Purpose |
+|---------|---------|
+| **OpenRouter** | Multi-model AI (GPT, DeepSeek, Llama, Qwen, Gemma) |
+| **Groq Whisper** | High-accuracy voice transcription |
+| **Telegram Bot API** | Bot communication and Mini App |
+| **Redis** | Caching and session storage |
+| **Prometheus** | Metrics and monitoring |
+| **Sentry** | Error tracking (optional) |
+
+---
 
 ## 🚀 Installation
 
-### Option 1: Docker (Recommended)
-
-```bash
-git clone https://github.com/ashkansuri-13/kaysan-bot.git
-cd kaysan-bot
-cp .env.example .env
-# Edit .env with your credentials
-docker-compose up -d
-```
-
-### Option 2: One-Line Install
+### One-Line Install
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/ashkansuri-13/kaysan-bot/master/install.sh)
 ```
 
-### Option 3: Manual Setup
+### Docker (Recommended)
+
+```bash
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
+cd kaysan-bot
+cp .env.example .env
+docker-compose up -d
+```
+
+### Manual Setup
 
 ```bash
 git clone https://github.com/ashkansuri-13/kaysan-bot.git
@@ -125,9 +219,10 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your credentials
 python run.py
 ```
+
+---
 
 ## ⚙️ Configuration
 
@@ -146,18 +241,19 @@ REDIS_URL=redis://localhost:6379/0
 SENTRY_DSN=your_sentry_dsn
 ```
 
+---
+
 ## 🧪 Testing
 
 ```bash
-# Run all tests
+# Run all 829 tests
 pytest tests/ -v
 
 # Run with coverage
 pytest tests/ --cov=bot --cov-report=html
-
-# Run specific test file
-pytest tests/test_chat.py -v
 ```
+
+---
 
 ## 📁 Project Structure
 
@@ -166,7 +262,7 @@ kaysan-bot/
 ├── run.py                  # Entry point
 ├── bot/
 │   ├── config.py           # Configuration
-│   ├── database.py         # SQLite database (16 tables)
+│   ├── database.py         # SQLite (16 tables)
 │   ├── router.py           # Language & intent detection
 │   ├── openrouter.py       # OpenRouter API client
 │   ├── keyboards.py        # Telegram keyboards
@@ -174,9 +270,9 @@ kaysan-bot/
 │   ├── middleware.py        # Rate limiting
 │   ├── health.py           # Health check (port 8080)
 │   ├── metrics.py          # Prometheus metrics (port 9090)
-│   ├── circuit_breaker.py  # Circuit breaker pattern
+│   ├── circuit_breaker.py  # Circuit breaker
 │   ├── backup.py           # Database backup
-│   ├── handlers/           # Command handlers
+│   ├── handlers/           # 20+ command handlers
 │   │   ├── core.py         # Core AI processing
 │   │   ├── chat.py         # Text chat
 │   │   ├── media.py        # Voice & images
@@ -194,17 +290,15 @@ kaysan-bot/
 │       ├── voice.py        # Voice transcription (Groq)
 │       ├── image.py        # Image generation
 │       └── tts.py          # Text to speech
-├── tests/                  # 50+ test files
+├── tests/                  # 55 test files, 829 tests
 ├── web/                    # Web interface (Glassmorphism)
-│   ├── index.html          # SPA frontend
-│   ├── style.css           # Pink-Purple Neon theme
-│   ├── app.js              # GSAP animations
-│   └── server.py           # aiohttp backend
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 └── .env.example
 ```
+
+---
 
 ## 🔧 Environment Variables
 
@@ -216,10 +310,12 @@ kaysan-bot/
 | `DEFAULT_LANG` | ❌ | `ku` | Default language (ku/fa/en) |
 | `FREE_MESSAGE_LIMIT` | ❌ | `100` | Free message limit |
 | `DAILY_COST_LIMIT` | ❌ | `5.0` | Daily cost limit ($) |
-| `CHANNEL_USERNAME` | ❌ | - | Required channel username |
-| `GROQ_API_KEY` | ❌ | - | Groq API key (voice transcription) |
-| `REDIS_URL` | ❌ | - | Redis URL (caching) |
-| `SENTRY_DSN` | ❌ | - | Sentry DSN (error tracking) |
+| `CHANNEL_USERNAME` | ❌ | - | Required channel |
+| `GROQ_API_KEY` | ❌ | - | Groq API key (voice) |
+| `REDIS_URL` | ❌ | - | Redis URL (cache) |
+| `SENTRY_DSN` | ❌ | - | Sentry DSN (errors) |
+
+---
 
 ## 🤖 AI Models
 
@@ -230,11 +326,7 @@ kaysan-bot/
 | `openai/gpt-4o-mini` | OpenAI | Fallback |
 | `anthropic/claude-haiku-4.5` | Anthropic | Fallback |
 
-**Per-intent settings:**
-- Chat: temperature=0.8, max_tokens=3000
-- Code: temperature=0.2, max_tokens=8000
-- Reasoning: temperature=0.3, max_tokens=4000
-- Creative: temperature=0.9, max_tokens=8000
+---
 
 ## 📄 License
 

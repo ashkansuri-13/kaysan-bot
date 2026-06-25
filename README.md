@@ -2,37 +2,95 @@
 
 # 🧠 Kaysan AI Bot
 
-**Telegram AI Bot — 80+ Features**
+**Telegram AI Bot — 60+ Features**
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
-[![AI Models](https://img.shields.io/badge/AI-Multi--Model-FF6B6B?style=for-the-badge)](https://openrouter.ai)
-[![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me)
+[![Tests](https://img.shields.io/badge/Tests-829+-brightgreen?style=for-the-badge)](tests/)
+[![Aiogram](https://img.shields.io/badge/Aiogram-3-0077B5?style=for-the-badge&logo=python&logoColor=white)](https://docs.aiogram.dev/)
 
 ---
 
-### Choose Your Language / زبان خود را انتخاب کنید / زمانەکەت هەڵبژێرە
+### Choose Your Language
+
+[![Persian](https://img.shields.io/badge/🇮🇷-فارسی-009546?style=for-the-badge)](README_FA.md)
+[![English](https://img.shields.io/badge/🇬🇧-English-012169?style=for-the-badge)](README_EN.md)
+[![Kurdish](https://img.shields.io/badge/Kurdish-ED2024?style=for-the-badge)](README_KU.md)
 
 <br>
-
-[![Persian](https://img.shields.io/badge/🇮🇷-فارسی-009546?style=for-the-badge&labelColor=009546)](README_FA.md)
-[![English](https://img.shields.io/badge/🇬🇧-English-012169?style=for-the-badge&labelColor=012169)](README_EN.md)
-[![Kurdish](https://img.shields.io/badge/ Kurdish-ED2024?style=for-the-badge&labelColor=ED2024)](README_KU.md)
-
-<br>
-
----
 
 <img src="assets/logo.png" width="120" />
 
 <br>
 
-**Kaysan AI** is a powerful Telegram bot powered by multiple AI models (GPT, DeepSeek, Llama, Qwen, Gemma) via OpenRouter. It supports **3 languages** (Kurdish Sorani, Persian, English) with **80+ features** including chat, voice transcription, image generation, group management, and 20+ utility tools.
+**Kaysan AI** is a powerful Telegram bot powered by multiple AI models (GPT, DeepSeek, Llama, Qwen, Gemma) via OpenRouter. It supports **3 languages** (Kurdish Sorani, Persian, English) with **60+ features** including chat, voice transcription, image generation, group management, and 20+ utility tools.
 
 <br>
 
-**Features at a Glance:**
+---
+
+## 📸 Screenshots
+
+> Screenshots coming soon! Join our channel to see the bot in action: [@ashkan_surii](https://t.me/ashkan_surii)
+
+| Chat | Group Management | Mini App |
+|------|-----------------|----------|
+| *AI-powered conversations* | *Auto moderation & tools* | *Glassmorphism UI* |
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Language** | Python 3.12 |
+| **Bot Framework** | Aiogram 3 |
+| **Database** | SQLite (WAL mode) |
+| **Cache** | Redis |
+| **AI Provider** | OpenRouter |
+| **Voice** | Groq Whisper |
+| **Container** | Docker |
+| **Monitoring** | Prometheus |
+| **Web Server** | aiohttp |
+
+---
+
+## 🏛️ Architecture
+
+```
+┌─────────────┐
+│  Telegram    │
+│  Users       │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Aiogram 3  │  ← Message Router
+│  Dispatcher │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Handlers   │  ← 20+ Command Handlers
+│  & Filters  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐
+│  AI Engine  │────▶│  OpenRouter │
+│  (Intent)   │     │  Multi-Model│
+└──────┬──────┘     └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│  SQLite DB  │  ← User Data & History
+└─────────────┘
+```
+
+---
+
+## ✨ Features at a Glance
 
 | Category | Highlights |
 |----------|-----------|
@@ -40,20 +98,51 @@
 | 🎨 Media | Voice-to-text, image analysis, AI image generation |
 | 🔧 Tools | QR, translate, weather, calculator, 20+ tools |
 | 👥 Groups | Welcome, anti-spam, slow mode, admin panel |
+| 👑 Admin | Dashboard, broadcast, analytics, backups |
 | 🎮 Fun | Quiz, riddles, jokes, daily challenges |
 | 🛡️ Security | Rate limiting, circuit breaker, health checks |
 
-<br>
+---
+
+## 👑 Admin Dashboard
+
+Full-featured admin panel accessible via Telegram DM:
+
+- **User Management** — View, ban, unban users
+- **Broadcast Messages** — Send messages to all users
+- **Usage Analytics** — Track messages, costs, popular commands
+- **Revenue Statistics** — Monitor bot expenses
+- **Subscription Management** — Grant/revoke premium access
+- **AI Model Control** — Test and monitor AI models
+- **System Monitoring** — Health checks, uptime, metrics
+- **Error Logs** — Track and debug issues
+- **Backup Control** — Database backup management
+- **Search Statistics** — Monitor search usage
 
 ---
 
-**Quick Start (One-Line Install):**
+## 🔌 Integrations
+
+| Service | Purpose |
+|---------|---------|
+| **OpenRouter** | Multi-model AI (GPT, DeepSeek, Llama, Qwen, Gemma) |
+| **Groq Whisper** | High-accuracy voice transcription |
+| **Telegram Bot API** | Bot communication and Mini App |
+| **Redis** | Caching and session storage |
+| **Prometheus** | Metrics and monitoring |
+| **Sentry** | Error tracking (optional) |
+
+---
+
+## 🚀 Quick Start
+
+### One-Line Install
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/ashkansuri-13/kaysan-bot/master/install.sh)
 ```
 
-Or with Docker:
+### Docker (Recommended)
 
 ```bash
 git clone https://github.com/ashkansuri-13/kaysan-bot.git
@@ -62,7 +151,111 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-<br>
+### Manual Setup
+
+```bash
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
+cd kaysan-bot
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python run.py
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all 829 tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=bot --cov-report=html
+
+# Run specific test
+pytest tests/test_chat.py -v
+```
+
+---
+
+## 📁 Project Structure
+
+```
+kaysan-bot/
+├── run.py                  # Entry point
+├── bot/
+│   ├── config.py           # Configuration
+│   ├── database.py         # SQLite (16 tables)
+│   ├── router.py           # Language & intent detection
+│   ├── openrouter.py       # OpenRouter API client
+│   ├── keyboards.py        # Telegram keyboards
+│   ├── texts.py            # Trilingual texts (ku/fa/en)
+│   ├── middleware.py        # Rate limiting
+│   ├── health.py           # Health check (port 8080)
+│   ├── metrics.py          # Prometheus metrics (port 9090)
+│   ├── circuit_breaker.py  # Circuit breaker pattern
+│   ├── backup.py           # Database backup
+│   ├── handlers/           # 20+ command handlers
+│   │   ├── core.py         # Core AI processing
+│   │   ├── chat.py         # Text chat
+│   │   ├── media.py        # Voice & images
+│   │   ├── search.py       # Web search
+│   │   ├── groups.py       # Group management
+│   │   ├── panel.py        # Admin panel
+│   │   ├── tools.py        # 20+ utility tools
+│   │   ├── quiz.py         # Quiz & trivia
+│   │   ├── translate.py    # Translation
+│   │   ├── notes.py        # Notes & reminders
+│   │   ├── remind.py       # Reminders
+│   │   ├── extras.py       # Extra features
+│   │   └── webapp.py       # Telegram Mini App
+│   └── services/
+│       ├── voice.py        # Voice transcription (Groq)
+│       ├── image.py        # Image generation
+│       └── tts.py          # Text to speech
+├── tests/                  # 55 test files, 829 tests
+├── web/                    # Web interface (Glassmorphism)
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── .env.example
+```
+
+---
+
+## 🔧 Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `BOT_TOKEN` | ✅ | - | Telegram bot token |
+| `OPENROUTER_KEY` | ✅ | - | OpenRouter API key |
+| `OWNER_ID` | ✅ | - | Owner Telegram ID |
+| `DEFAULT_LANG` | ❌ | `ku` | Default language (ku/fa/en) |
+| `FREE_MESSAGE_LIMIT` | ❌ | `100` | Free message limit |
+| `DAILY_COST_LIMIT` | ❌ | `5.0` | Daily cost limit ($) |
+| `CHANNEL_USERNAME` | ❌ | - | Required channel |
+| `GROQ_API_KEY` | ❌ | - | Groq API key (voice) |
+| `REDIS_URL` | ❌ | - | Redis URL (cache) |
+| `SENTRY_DSN` | ❌ | - | Sentry DSN (errors) |
+
+---
+
+## 🤖 AI Models
+
+| Model | Provider | Use Case |
+|-------|----------|----------|
+| `mimo/mimo-auto` | Xiaomi MiMo | Primary (default) |
+| `deepseek/deepseek-chat` | DeepSeek | Fallback |
+| `openai/gpt-4o-mini` | OpenAI | Fallback |
+| `anthropic/claude-haiku-4.5` | Anthropic | Fallback |
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
