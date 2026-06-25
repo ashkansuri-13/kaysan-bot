@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from aiohttp import web
+from agent import detect_feature_request, get_feature_response
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from bot import config, openrouter, router
@@ -400,6 +401,16 @@ async def handle_chat(request):
         if len(message) > 4000:
             return web.json_response({"error": "message too long"}, status=400)
 
+        feature_type = detect_feature_request(message, lang)
+        if feature_type:
+            feature_response = get_feature_response(feature_type, lang)
+            if feature_response:
+                return web.json_response({
+                    "reply": feature_response,
+                    "model": "agent",
+                    "tokens": 0,
+                })
+
         intent = router.detect_intent(message)
 
         if model_type in MODEL_TYPE_MAP and MODEL_TYPE_MAP[model_type]:
@@ -492,6 +503,25 @@ async def handle_chat_stream(request):
             return web.json_response({"error": "empty message"}, status=400)
         if len(message) > 4000:
             return web.json_response({"error": "message too long"}, status=400)
+
+        feature_type = detect_feature_request(message, lang)
+        if feature_type:
+            feature_response = get_feature_response(feature_type, lang)
+            if feature_response:
+                response = web.StreamResponse(
+                    status=200,
+                    headers={
+                        "Content-Type": "text/event-stream",
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                    },
+                )
+                await response.prepare(request)
+                chunk_data = json.dumps({"chunk": feature_response})
+                await response.write(("data: " + chunk_data + "\n\n").encode())
+                await response.write(b"data: [DONE]\n\n")
+                await response.drain()
+                return response
 
         intent = router.detect_intent(message)
 
