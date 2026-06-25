@@ -126,7 +126,7 @@ async def cmd_start(message: Message):
          InlineKeyboardButton(text="📌 یادداشت", callback_data="quick:note")],
     ])
 
-    welcome = t(lang, "welcome")
+    welcome = t(lang, "welcome").format(name=user.first_name or user.full_name or "دۆست")
     await message.answer(welcome, parse_mode=ParseMode.HTML, reply_markup=quick_kb)
 
 
