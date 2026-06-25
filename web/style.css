@@ -141,30 +141,20 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-gradient);
-  border-radius: var(--radius);
-  font-size: 20px;
-  box-shadow: 0 2px 12px rgba(129, 140, 248, 0.3);
+  border-radius: 50%;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(129, 140, 248, 0.4));
   transition: all var(--transition-normal);
 }
 
 .brand-icon:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 20px rgba(129, 140, 248, 0.5);
+  transform: scale(1.1);
+  filter: drop-shadow(0 6px 12px rgba(129, 140, 248, 0.6));
 }
 
-.pulse-ring {
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--c-accent);
-  border-radius: calc(var(--radius) + 3px);
-  opacity: 0;
-  animation: pulse-ring 3s ease-out infinite;
-}
-
-@keyframes pulse-ring {
-  0% { opacity: 0.6; transform: scale(0.95); }
-  100% { opacity: 0; transform: scale(1.15); }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .brand-text {
@@ -1344,4 +1334,95 @@ textarea:focus-visible {
   .msg {
     break-inside: avoid;
   }
+}
+
+
+/* ============================================
+   Fullscreen Mode
+   ============================================ */
+.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--c-bg);
+}
+
+.fullscreen #app {
+  max-width: 100%;
+  height: 100%;
+}
+
+/* ============================================
+   Tablet Responsive
+   ============================================ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #app {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+  
+  .header {
+    padding: 0 24px;
+  }
+  
+  .chat-area {
+    padding: 0 20px;
+  }
+  
+  .quick-grid {
+    max-width: 400px;
+  }
+  
+  .sidebar {
+    width: 320px;
+  }
+}
+
+/* ============================================
+   More Effects
+   ============================================ */
+.msg.bot .msg-content {
+  transition: all var(--transition-fast);
+}
+
+.msg.bot .msg-content:hover {
+  border-color: var(--c-accent);
+  box-shadow: 0 2px 8px rgba(129, 140, 248, 0.1);
+}
+
+.send-btn:not(:disabled) {
+  background: var(--c-gradient);
+  transition: all var(--transition-fast);
+}
+
+.send-btn:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4);
+}
+
+.quick-card {
+  transition: all var(--transition-fast);
+}
+
+.quick-card:hover {
+  background: linear-gradient(135deg, var(--c-surface), var(--c-surface-2));
+}
+
+/* ============================================
+   Improved Scrollbar
+   ============================================ */
+.chat-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-area::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 3px;
+}
+
+.chat-area::-webkit-scrollbar-thumb:hover {
+  background: var(--c-accent);
 }
