@@ -545,8 +545,8 @@ async def handle_chat_stream(request):
 
         response = web.StreamResponse(
             status=200,
-            content_type="text/event-stream",
             headers={
+                "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
                 "X-Accel-Buffering": "no",
             },
