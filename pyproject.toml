@@ -9,3 +9,24 @@ ignore = ["E501", "B008", "A003"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["kaysan-bot"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[tool.coverage.run]
+source = ["kaysan-bot/bot"]
+omit = ["*/tests/*", "*/venv/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.",
+    "pass",
+    "raise NotImplementedError",
+]
+show_missing = true

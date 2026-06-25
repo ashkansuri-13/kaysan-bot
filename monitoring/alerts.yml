@@ -1,0 +1,25 @@
+groups:
+  - name: kaysan-bot
+    rules:
+      - alert: BotDown
+        expr: up{job="kaysan-bot"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Bot is down
+      - alert: HighErrorRate
+        expr: rate(kaysan_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+      - alert: HighLatency
+        expr: kaysan_api_latency_seconds > 5
+        for: 5m
+        labels:
+          severity: warning
+      - alert: HighMemory
+        expr: process_resident_memory_bytes / 1024 / 1024 > 500
+        for: 5m
+        labels:
+          severity: warning

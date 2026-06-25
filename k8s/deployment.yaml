@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kaysan-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kaysan-bot
+  template:
+    metadata:
+      labels:
+        app: kaysan-bot
+    spec:
+      containers:
+      - name: kaysan-bot
+        image: kaysan-bot:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9090
+        env:
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: kaysan-secrets
+              key: bot-token
+        - name: OPENROUTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kaysan-secrets
+              key: openrouter-key
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

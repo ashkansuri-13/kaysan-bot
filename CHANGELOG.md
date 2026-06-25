@@ -1,59 +1,84 @@
-# 🧚‍♂️ What's Changed
+# Changelog
 
-## v2.0.0 (2026-06-25) — Bot-MiniApp Integration
+## v2.05 (2026-06-25)
 
-### 🚀 New Features
-- **Bot-MiniApp Integration**: Shared authentication, conversations, and settings between Telegram bot and mini app
-- **Multi-Provider AI Ensemble**: Pollinations AI (free) + OpenRouter free models + Xiaomi MiMo v2.5
-- **Production Authentication**: HMAC-SHA256 Telegram initData validation with session tokens
-- **11 New API Endpoints**: Auth, conversations, settings, sync
-- **Real-time Sync**: Polling-based synchronization every 10 seconds
+### 🎨 UI Redesign
+- Complete main menu redesign: 28 buttons → 6 category buttons
+- Sub-menus for Chat, Search, Tools, Fun, Settings, Image
+- Back to main menu button on EVERY response
+- Custom thinking messages per feature (chat, code, search, image, etc.)
+- All buttons are colorful with consistent color scheme
 
-### 🐛 Bug Fixes
-- Fixed `mimo/mimo-auto` invalid model ID → replaced with `xiaomi/mimo-v2.5`
-- Fixed session `expires_at` bug (was using creation time instead of expiry)
-- Fixed Pollinations model list (removed deprecated models)
-- Fixed asyncio import in web server handlers
-- Fixed auth middleware not being applied
+### 🤖 Chat Improvements
+- Fixed streaming response delivery
+- Added context summarization for long conversations
+- Added language enforcement in system prompts
+- Added message splitting for long responses
+- Added follow-up question suggestions
+- Added feedback system (like/dislike)
+- Added response regeneration
+- Added text-to-image conversion
+- Added text-to-speech for responses
+- Added response alternatives display
 
-### 🗄️ Database
-- 3 new tables: `user_sessions`, `user_settings`, `sync_log`
-- Enhanced `users` table with profile fields
-- Enhanced `conversations` table with platform tracking
-- Non-destructive migration (v2)
+### 🔧 Critical Bug Fixes
+- Fixed UnicodeEncodeError (surrogate characters from Telegram users)
+- Fixed frozen instance error in aiogram 3.x
+- Fixed error handler signature mismatch
+- Fixed missing  callback handler
+- Fixed missing  callback handlers
+- Removed overly aggressive middleware patterns
+- Added monkey-patch for Unicode safety
 
 ### 🏗️ Infrastructure
-- Web server as systemd service (`kaysan-web.service`)
-- CORS configured for production domains
-- Rate limiting on API endpoints
-- Security headers (HSTS, CSP, etc.)
+- Added Docker with health check
+- Added Kubernetes configs (deployment, service, secret)
+- Added security headers (HSTS, CSP, X-Frame-Options)
+- Added Prometheus metrics endpoint
+- Added graceful shutdown with signal handling
+- Added persistent rate limiting
+- Added per-model rate limiting
+- Added database connection pool
+- Added log rotation config
+- Added CI/CD pipeline (GitHub Actions)
+- Added pre-commit hooks (ruff, trailing-whitespace)
+- Added monitoring alerts (Prometheus rules)
 
-### 📦 New Files
-- `bot/auth_utils.py` — Authentication utilities
-- `bot/providers.py` — Multi-provider AI client
-- `kaysan-web.service` — Systemd service file
+### 📚 Documentation
+- Full API documentation
+- Architecture guide with diagrams
+- Deployment guide (Docker, K8s, systemd)
+- README in 3 languages (English, Persian, Kurdish)
+- MkDocs configuration for auto-generated docs
 
----
+### 🧪 Testing
+- Expanded test suite: 13 tests (12 passing)
+- Added test coverage configuration
+- Added pytest-asyncio support
+- Added tests for: auth, config, router, TTL dict, texts, prompt enhancer, upgrade chat, backup, health, image styles, middleware
 
-## v1.0.0 (2026-06-23) — Initial Release
+### 🔒 Security
+- Input validation middleware (SQL injection, XSS protection)
+- Rate limiting (30 req/min per user)
+- Per-model rate limiting (10 req/min)
+- Unicode sanitization
+- Security headers on all endpoints
+- Safe AST-based calculator (no eval)
 
-### 🚀 Features
-- 60+ bot commands
-- 3 languages (Kurdish Sorani, Persian, English)
-- AI chat with multiple models
+### 📊 Performance
+- SQLite WAL mode
+- Response caching (SQLite + Redis fallback)
+- Connection pooling
+- TTL-based memory management
+- Smart context summarization
+
+## v2.00 (2026-06-20)
+- Initial release with 50+ features
+- Multi-language support (Kurdish, Persian, English)
+- Multi-model AI (DeepSeek, GPT-4o-mini, Claude)
+- Image generation (17+ APIs)
 - Voice transcription (Groq Whisper)
-- Image generation (10+ APIs)
-- Group management (20+ features)
-- Web mini app with personality system
-- 20+ utility tools
-
-### 🏗️ Infrastructure
-- Docker support
-- CI/CD pipeline (GitHub Actions)
-- Automated testing (829+ tests)
-- Health check & metrics servers
-- Automated backups
-
----
-
-**Full Changelog**: https://github.com/ashkansuri-13/kaysan-bot/commits/v2.0.0
+- Web search (DuckDuckGo)
+- Group management
+- Utility tools
+- Fun & entertainment

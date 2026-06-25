@@ -1,0 +1,28 @@
+site_name: Kaysan Bot Docs
+site_description: Documentation for Kaysan AI Telegram Bot
+repo_url: https://github.com/ashkansuri-13/kaysan-bot
+
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: amber
+  features:
+    - navigation.tabs
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  - Commands: commands.md
+  - API Reference: api.md
+  - Deployment: deployment.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
