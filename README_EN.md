@@ -103,17 +103,23 @@ Kaysan AI is a feature-rich Telegram bot powered by multiple AI models (GPT, Dee
 ### Option 1: Docker (Recommended)
 
 ```bash
-git clone https://github.com/ashkansuri-create/kaysan-bot.git
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
 cd kaysan-bot
 cp .env.example .env
 # Edit .env with your credentials
 docker-compose up -d
 ```
 
-### Option 2: Manual Setup
+### Option 2: One-Line Install
 
 ```bash
-git clone https://github.com/ashkansuri-create/kaysan-bot.git
+bash <(curl -s https://raw.githubusercontent.com/ashkansuri-13/kaysan-bot/master/install.sh)
+```
+
+### Option 3: Manual Setup
+
+```bash
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
 cd kaysan-bot
 python -m venv venv
 source venv/bin/activate

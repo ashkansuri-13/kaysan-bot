@@ -103,17 +103,23 @@ Kaysan AI بۆتێکی تلەگرامی بەهێزە کە بە مۆدێلە جی
 #### شێوازی ١: Docker (پێشنیارکراو)
 
 ```bash
-git clone https://github.com/ashkansuri-create/kaysan-bot.git
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
 cd kaysan-bot
 cp .env.example .env
 # فایل .env بگۆڕە
 docker-compose up -d
 ```
 
-#### شێوازی ٢: بە دست
+#### شێوازی ٢: دامەزراندنی یەک هێلی
 
 ```bash
-git clone https://github.com/ashkansuri-create/kaysan-bot.git
+bash <(curl -s https://raw.githubusercontent.com/ashkansuri-13/kaysan-bot/master/install.sh)
+```
+
+#### شێوازی ٣: بە دست
+
+```bash
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
 cd kaysan-bot
 python -m venv venv
 source venv/bin/activate

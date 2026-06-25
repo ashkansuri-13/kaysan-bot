@@ -47,10 +47,16 @@
 
 ---
 
-**Quick Start:**
+**Quick Start (One-Line Install):**
 
 ```bash
-git clone https://github.com/ashkansuri-create/kaysan-bot.git
+bash <(curl -s https://raw.githubusercontent.com/ashkansuri-13/kaysan-bot/master/install.sh)
+```
+
+Or with Docker:
+
+```bash
+git clone https://github.com/ashkansuri-13/kaysan-bot.git
 cd kaysan-bot
 cp .env.example .env
 docker-compose up -d
