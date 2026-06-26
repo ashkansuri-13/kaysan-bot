@@ -105,30 +105,36 @@ def get_style_keyboard():
 
 
 async def _gemini_image(prompt: str) -> bytes | None:
-    """Google Gemini Image Generation — کیفیت بالا با Imagen."""
+    """Google Gemini Image Generation — gemini-2.5-flash-image + gemini-3-pro-image."""
     if not config.GOOGLE_AI_KEY:
         return None
     try:
         from google import genai
         from google.genai import types
-        import base64
 
         client = genai.Client(api_key=config.GOOGLE_AI_KEY)
 
-        response = client.models.generate_images(
-            model="imagen-3.0-generate-002",
-            prompt=prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-                aspect_ratio="1:1",
-                safety_filter_level="BLOCK_ONLY_HIGH",
-            ),
-        )
+        for model in ["gemini-2.5-flash-image", "gemini-3-pro-image", "gemini-3.1-flash-image"]:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=f"Generate an image: {prompt}",
+                    config=types.GenerateContentConfig(
+                        response_modalities=["Text", "Image"],
+                    ),
+                )
 
-        if response.generated_images:
-            img = response.generated_images[0]
-            if img.image and img.image.image_bytes:
-                return img.image.image_bytes
+                if response.candidates and response.candidates[0].content:
+                    for part in response.candidates[0].content.parts:
+                        if part.inline_data and part.inline_data.data:
+                            img_data = part.inline_data.data
+                            if isinstance(img_data, bytes) and len(img_data) > 500:
+                                log.info("✅ Gemini Image (%s): %d bytes", model, len(img_data))
+                                return img_data
+            except Exception as model_err:
+                log.warning("⚠️ Gemini Image %s failed: %s", model, model_err)
+                continue
+        log.warning("⚠️ Gemini Image: all models exhausted or unavailable")
     except Exception as e:
         log.warning("⚠️ Gemini Image failed: %s", e)
     return None

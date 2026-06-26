@@ -31,7 +31,7 @@ async def _gemini_tts(text: str, lang: str = "fa") -> bytes | None:
         voice = _VOICE_MAP_GEMINI.get(lang, "Kore")
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-tts-preview",
             contents=f"Say the following text exactly, with natural emotion and pacing. Text: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["Audio"],
