@@ -1,6 +1,6 @@
 // ============================================
-// Kaysan AI — Web App v3.0 (2026)
-// Telegram Mini App + Full UI/UX
+// Kaysan AI — Web App v3.1 (2026)
+// Fixed: streaming, voice, security
 // ============================================
 
 const API = '';
@@ -56,9 +56,6 @@ function applyTelegramTheme() {
     if (colors.text_color) root.style.setProperty('--text-primary', colors.text_color);
     if (colors.hint_color) root.style.setProperty('--text-secondary', colors.hint_color);
     if (colors.button_color) root.style.setProperty('--accent', colors.button_color);
-    if (colors.button_text_color) {
-      document.documentElement.style.setProperty('--btn-text', colors.button_text_color);
-    }
   }
 }
 
@@ -87,17 +84,10 @@ let streamingEnabled = true;
 let particlesEnabled = true;
 let soundsEnabled = true;
 let isRecording = false;
-let recognition = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let voiceTimer = null;
 let voiceSeconds = 0;
-
-const TONE_LABELS = ['رک', 'ملایم', 'عادی', 'رسمی', 'پرانرژی'];
-const VERBOSITY_LABELS = ['کوتاه', 'متعادل', 'مفصل', 'کامل'];
-const HUMOR_LABELS = ['بدون', 'کم', 'متعادل', 'زیاد'];
-const EMOJI_LABELS = ['بدون', 'کم', 'عادی', 'زیاد'];
-const EMOTION_LABELS = ['آرام', 'عادی', 'گرم', 'پرانرژی'];
 
 const PRESETS = {
   balanced:    { name: 'متعادل',     icon: '⚖️' },
@@ -110,7 +100,7 @@ const PRESETS = {
   technical:   { name: 'فنی',        icon: '🔧' },
 };
 
-const EMOJIS = ['😀','😂','😍','🥰','😎','🤩','😭','🤔','😱','🥳','😴','🙄','👍','👎','❤️','🔥','⭐','🎉','💯','🙏','👋','💪','✌️','🤝','👀','💡','🚀','✨','🎯','🎨','💻','🤖','🧠','📚','🎵','🌙','☀️','🌈','🍕','☕','🎮','⚽','🏆','📷','✈️','🌍','💻','📱','🔮','💎','🌟'];
+const EMOJIS = ['😀','😂','😍','🥰','😎','🤩','😭','🤔','😱','🥳','😴','🙄','👍','👎','❤️','🔥','⭐','🎉','💯','🙏','👋','💪','✌️','🤝','👀','💡','🚀','✨','🎯','🎨','💻','🤖','🧠','📚','🎵','🌙','☀️','🌈','🍕','☕','🎮','⚽','🏆','📷','✈️','🌍','📱','🔮','💎','🌟'];
 
 // ============================================
 // Markdown Parser
@@ -130,7 +120,12 @@ function renderMarkdown(text) {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+    if (url.startsWith('javascript:') || url.startsWith('data:')) return match;
+    return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+  });
+
   html = html.replace(/\n/g, '<br>');
   return html;
 }
@@ -138,12 +133,13 @@ function renderMarkdown(text) {
 // ============================================
 // Particles
 // ============================================
+let particleAnimFrame = null;
+
 function initParticles() {
   const canvas = document.getElementById('particles');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let particles = [];
-  let animFrame;
+  const particles = [];
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -180,7 +176,6 @@ function initParticles() {
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     particles.forEach(p => { p.update(); p.draw(); });
-
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
@@ -195,34 +190,41 @@ function initParticles() {
         }
       }
     }
-    animFrame = requestAnimationFrame(animate);
+    particleAnimFrame = requestAnimationFrame(animate);
   }
 
   if (particlesEnabled) animate();
 
   window.toggleParticles = (on) => {
     particlesEnabled = on;
-    if (on) animate(); else cancelAnimationFrame(animFrame);
+    if (on) { if (!particleAnimFrame) animate(); }
+    else { cancelAnimationFrame(particleAnimFrame); particleAnimFrame = null; }
   };
 }
 
 // ============================================
-// Sound Effects
+// Sound Effects (shared AudioContext)
 // ============================================
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _audioCtx;
+}
+
 function playSound(type) {
   if (!soundsEnabled) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
     gain.gain.value = 0.1;
-
     if (type === 'send') { osc.frequency.value = 800; osc.type = 'sine'; }
     else if (type === 'receive') { osc.frequency.value = 600; osc.type = 'sine'; }
     else if (type === 'error') { osc.frequency.value = 200; osc.type = 'sawtooth'; }
-
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
@@ -234,6 +236,7 @@ function playSound(type) {
 // ============================================
 function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.remove('hidden');
   t.classList.add('show');
@@ -270,9 +273,8 @@ function saveSettings() {
 // Conversations
 // ============================================
 function loadConversations() {
-  try {
-    conversations = JSON.parse(localStorage.getItem('kay_conversations') || '[]');
-  } catch (e) { conversations = []; }
+  try { conversations = JSON.parse(localStorage.getItem('kay_conversations') || '[]'); }
+  catch (e) { conversations = []; }
 }
 
 function saveConversations() {
@@ -311,6 +313,17 @@ function renderConversations() {
   });
 }
 
+function renderMessages() {
+  const mg = document.getElementById('messages');
+  if (!mg) return;
+  mg.innerHTML = '';
+  if (chatHistory.length === 0) { showWelcome(); return; }
+  hideWelcome();
+  chatHistory.forEach(msg => {
+    addMessage(msg.role === 'assistant' ? 'bot' : 'user', msg.content);
+  });
+}
+
 // ============================================
 // Messages
 // ============================================
@@ -329,7 +342,8 @@ function hideWelcome() {
 function addMessage(role, content, streaming = false) {
   hideWelcome();
   const messages = document.getElementById('messages');
-  const id = 'msg-' + Date.now();
+  if (!messages) return null;
+  const id = 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
   const time = new Date().toLocaleTimeString('fa', { hour: '2-digit', minute: '2-digit' });
   const avatar = role === 'bot' ? '<img src="/logo.png" alt="Kaysan">' : (tgUser && tgUser.photo_url ? `<img src="${tgUser.photo_url}" alt="User">` : '👤');
 
@@ -340,14 +354,24 @@ function addMessage(role, content, streaming = false) {
         <div class="msg-bubble">${streaming ? '<div class="streaming-text"></div>' : renderMarkdown(content)}</div>
         <div class="msg-time">${time}</div>
         <div class="msg-actions">
-          <button class="msg-action" onclick="copyMessage('${id}')">📋 کپی</button>
-          <button class="msg-action" onclick="speakMessage('${id}')">🔊 صدا</button>
+          <button class="msg-action" data-action="copy" data-target="${id}">📋 کپی</button>
+          <button class="msg-action" data-action="speak" data-target="${id}">🔊 صدا</button>
         </div>
       </div>
     </div>
   `;
   messages.insertAdjacentHTML('beforeend', html);
   messages.scrollTop = messages.scrollHeight;
+
+  const msgEl = document.getElementById(id);
+  if (msgEl) {
+    msgEl.querySelectorAll('.msg-action').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.action === 'copy') copyMessage(btn.dataset.target);
+        if (btn.dataset.action === 'speak') speakMessage(btn.dataset.target);
+      });
+    });
+  }
   return id;
 }
 
@@ -370,7 +394,7 @@ function speakMessage(id) {
   const el = document.querySelector(`#${id} .msg-bubble`);
   if (el && 'speechSynthesis' in window) {
     const utter = new SpeechSynthesisUtterance(el.textContent);
-    utter.lang = lang === 'ku' ? 'ku' : lang === 'fa' ? 'fa' : 'en';
+    utter.lang = lang === 'ku' ? 'ckb' : lang === 'fa' ? 'fa' : 'en';
     speechSynthesis.speak(utter);
   }
 }
@@ -392,26 +416,29 @@ async function sendMessage(text) {
   const typing = document.getElementById('typing-indicator');
   if (typing) typing.classList.remove('hidden');
 
-  const stream = streamingEnabled;
-
   try {
     const body = {
       message: text,
       model_type: modelType,
       personality: personality,
       custom_prompt: customPrompt,
-      stream: stream,
+      stream: streamingEnabled,
     };
     if (tg && tg.initData) body.init_data = tg.initData;
 
     const msgId = addMessage('bot', '', true);
 
-    if (stream) {
+    if (streamingEnabled) {
       const res = await fetch(`${API}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Request failed');
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -426,10 +453,13 @@ async function sendMessage(text) {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
+              if (data.error) throw new Error(data.error);
               if (data.done) break;
               full += data.text;
               updateStreamingMessage(msgId, full);
-            } catch (e) {}
+            } catch (e) {
+              if (e.message !== 'Unexpected end of JSON input') throw e;
+            }
           }
         }
       }
@@ -441,6 +471,12 @@ async function sendMessage(text) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Request failed');
+      }
+
       const data = await res.json();
       const bubble = document.querySelector(`#${msgId} .msg-bubble`);
       if (bubble) bubble.innerHTML = renderMarkdown(data.response);
@@ -450,7 +486,7 @@ async function sendMessage(text) {
     playSound('receive');
   } catch (e) {
     playSound('error');
-    showToast('خطا در ارسال پیام');
+    showToast(`خطا: ${e.message}`);
   } finally {
     if (typing) typing.classList.add('hidden');
     if (currentConvId) {
@@ -465,15 +501,15 @@ async function sendMessage(text) {
 }
 
 // ============================================
-// Voice Input
+// Voice Input (actually sends audio)
 // ============================================
 function initVoice() {
   const voiceBtn = document.getElementById('voice-btn');
   if (!voiceBtn) return;
 
   voiceBtn.addEventListener('click', () => {
-    if (isRecording) { stopRecording(); }
-    else { startRecording(); }
+    if (isRecording) stopRecording();
+    else startRecording();
   });
 }
 
@@ -482,17 +518,23 @@ function startRecording() {
 
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     isRecording = true;
-    mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
     voiceSeconds = 0;
 
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
     mediaRecorder.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
       isRecording = false;
+      document.getElementById('voice-btn')?.classList.remove('recording');
     };
 
     mediaRecorder.start();
+    document.getElementById('voice-btn')?.classList.add('recording');
 
     const overlay = document.getElementById('voice-overlay');
     if (overlay) overlay.classList.remove('hidden');
@@ -521,6 +563,41 @@ function stopRecording() {
   clearInterval(voiceTimer);
   const overlay = document.getElementById('voice-overlay');
   if (overlay) overlay.classList.add('hidden');
+}
+
+async function sendVoiceMessage() {
+  if (audioChunks.length === 0) { stopRecording(); return; }
+
+  const blob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' });
+  stopRecording();
+
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.classList.remove('hidden');
+
+  try {
+    const formData = new FormData();
+    formData.append('audio', blob, 'voice.webm');
+
+    const res = await fetch(`${API}/api/voice`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Voice processing failed');
+    }
+
+    const data = await res.json();
+    if (data.text) {
+      showToast(`متن استخراج شده: ${data.text.substring(0, 50)}...`);
+      sendMessage(data.text);
+    }
+  } catch (e) {
+    showToast(`خطا در پردازش صدا: ${e.message}`);
+  } finally {
+    if (typing) typing.classList.add('hidden');
+  }
 }
 
 // ============================================
@@ -672,10 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('voice-cancel')?.addEventListener('click', stopRecording);
-  document.getElementById('voice-send')?.addEventListener('click', () => {
-    stopRecording();
-    showToast('پیام صوتی ارسال شد');
-  });
+  document.getElementById('voice-send')?.addEventListener('click', sendVoiceMessage);
 
   document.getElementById('particles-toggle')?.addEventListener('change', (e) => {
     particlesEnabled = e.target.checked;
