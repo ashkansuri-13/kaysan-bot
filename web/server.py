@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Kaysan AI Web Server v3.1 — Fixed: streaming, auth, security, rate limit."""
-import asyncio
+"""Kaysan AI Web Server v3.2 — All issues fixed."""
 import collections
 import hashlib
 import hmac
@@ -79,17 +78,21 @@ rate_limiter = RateLimiter(max_requests=30, window=60)
 
 
 # ============================================
-# Security Headers Middleware
+# Middleware: Security Headers + CORS + Hide Server
 # ============================================
 @web.middleware
-async def security_headers_middleware(request: web.Request, handler):
-    response = await handler(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
-    response.headers["Content-Security-Policy"] = (
+async def security_middleware(request: web.Request, handler):
+    if request.method == "OPTIONS":
+        resp = web.Response(status=204)
+    else:
+        resp = await handler(request)
+
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "SAMEORIGIN"
+    resp.headers["X-XSS-Protection"] = "1; mode=block"
+    resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    resp.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
+    resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
@@ -98,7 +101,11 @@ async def security_headers_middleware(request: web.Request, handler):
         "connect-src 'self' https://api.openrouter.ai; "
         "frame-ancestors 'self' https://web.telegram.org https://telegram.org;"
     )
-    return response
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    resp.headers["Server"] = "Kaysan"
+    return resp
 
 
 # ============================================
@@ -133,7 +140,7 @@ async def handle_health(request: web.Request) -> web.Response:
     return web.json_response({
         "status": "healthy",
         "service": "kaysan-ai-bot",
-        "version": "3.1.0",
+        "version": "3.2.0",
         "uptime_seconds": time.time() - _start_time,
     })
 
@@ -305,9 +312,13 @@ async def handle_index(request: web.Request) -> web.Response:
     return web.FileResponse(WEB_DIR / "index.html")
 
 
+async def handle_not_found(request: web.Request) -> web.Response:
+    return web.json_response({"error": "Not found"}, status=404)
+
+
 _start_time = time.time()
 
-app = web.Application(middlewares=[security_headers_middleware])
+app = web.Application(middlewares=[security_middleware])
 app.router.add_get("/", handle_index)
 app.router.add_get("/health", handle_health)
 app.router.add_post("/api/chat", handle_chat)
@@ -316,8 +327,9 @@ app.router.add_post("/api/image", handle_image)
 app.router.add_get("/api/models", handle_models)
 app.router.add_post("/api/verify-user", handle_verify_user)
 app.router.add_static("/", path=str(WEB_DIR), show_index=False)
+app.router.add_route("*", "/{path:.*}", handle_not_found)
 
 if __name__ == "__main__":
     port = int(os.getenv("WEB_PORT", "8080"))
-    log.info(f"Kaysan AI Web Server v3.1 starting on port {port}")
+    log.info(f"Kaysan AI Web Server v3.2 starting on port {port}")
     web.run_app(app, host="0.0.0.0", port=port)

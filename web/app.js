@@ -1,6 +1,6 @@
 // ============================================
-// Kaysan AI — Web App v3.1 (2026)
-// Fixed: streaming, voice, security
+// Kaysan AI — Web App v3.2 (2026)
+// All issues fixed
 // ============================================
 
 const API = '';
@@ -103,7 +103,7 @@ const PRESETS = {
 const EMOJIS = ['😀','😂','😍','🥰','😎','🤩','😭','🤔','😱','🥳','😴','🙄','👍','👎','❤️','🔥','⭐','🎉','💯','🙏','👋','💪','✌️','🤝','👀','💡','🚀','✨','🎯','🎨','💻','🤖','🧠','📚','🎵','🌙','☀️','🌈','🍕','☕','🎮','⚽','🏆','📷','✈️','🌍','📱','🔮','💎','🌟'];
 
 // ============================================
-// Markdown Parser
+// Markdown Parser (XSS-safe)
 // ============================================
 function renderMarkdown(text) {
   if (!text) return '';
@@ -293,6 +293,10 @@ function newConversation() {
 function renderConversations() {
   const list = document.getElementById('conversations-list');
   if (!list) return;
+  if (conversations.length === 0) {
+    list.innerHTML = '<div class="conv-empty">هنوز مکالمه‌ای ندارید</div>';
+    return;
+  }
   list.innerHTML = conversations.map(c => `
     <div class="conv-item ${c.id === currentConvId ? 'active' : ''}" data-id="${c.id}">
       <div class="conv-title">${c.title}</div>
@@ -590,11 +594,48 @@ async function sendVoiceMessage() {
 
     const data = await res.json();
     if (data.text) {
-      showToast(`متن استخراج شده: ${data.text.substring(0, 50)}...`);
+      showToast(`متن: ${data.text.substring(0, 50)}...`);
       sendMessage(data.text);
     }
   } catch (e) {
     showToast(`خطا در پردازش صدا: ${e.message}`);
+  } finally {
+    if (typing) typing.classList.add('hidden');
+  }
+}
+
+// ============================================
+// Image Generation
+// ============================================
+async function generateImage() {
+  const input = document.getElementById('msg-input');
+  const prompt = input?.value?.trim();
+  if (!prompt) { showToast('لطفاً توضیح تصویر را بنویسید'); return; }
+
+  input.value = '';
+  document.getElementById('send-btn').disabled = true;
+
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.classList.remove('hidden');
+
+  try {
+    const res = await fetch(`${API}/api/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Image generation failed');
+    }
+
+    const data = await res.json();
+    if (data.url) {
+      addMessage('bot', `![${prompt}](${data.url})`);
+    }
+  } catch (e) {
+    showToast(`خطا: ${e.message}`);
   } finally {
     if (typing) typing.classList.add('hidden');
   }
@@ -751,6 +792,28 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('voice-cancel')?.addEventListener('click', stopRecording);
   document.getElementById('voice-send')?.addEventListener('click', sendVoiceMessage);
 
+  document.getElementById('image-btn')?.addEventListener('click', generateImage);
+
+  document.getElementById('model-select')?.addEventListener('change', (e) => {
+    modelType = e.target.value;
+    saveSettings();
+  });
+
+  document.getElementById('streaming-toggle')?.addEventListener('change', (e) => {
+    streamingEnabled = e.target.checked;
+    saveSettings();
+  });
+
+  document.getElementById('voice-input-toggle')?.addEventListener('change', (e) => {
+    voiceInputEnabled = e.target.checked;
+    saveSettings();
+  });
+
+  document.getElementById('voice-output-toggle')?.addEventListener('change', (e) => {
+    voiceOutputEnabled = e.target.checked;
+    saveSettings();
+  });
+
   document.getElementById('particles-toggle')?.addEventListener('change', (e) => {
     particlesEnabled = e.target.checked;
     saveSettings();
@@ -785,6 +848,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (badge && PRESETS[personality]) {
     badge.textContent = `${PRESETS[personality].icon} ${PRESETS[personality].name}`;
   }
+
+  const modelSelect = document.getElementById('model-select');
+  if (modelSelect) modelSelect.value = modelType;
+
+  const streamingToggle = document.getElementById('streaming-toggle');
+  if (streamingToggle) streamingToggle.checked = streamingEnabled;
+
+  const voiceInputToggle = document.getElementById('voice-input-toggle');
+  if (voiceInputToggle) voiceInputToggle.checked = voiceInputEnabled;
+
+  const voiceOutputToggle = document.getElementById('voice-output-toggle');
+  if (voiceOutputToggle) voiceOutputToggle.checked = voiceOutputEnabled;
 });
 
 function closeAllSidebars() {

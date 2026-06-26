@@ -804,3 +804,47 @@ body {
   .brand-name { font-size: 14px; }
   .icon-btn { width: 36px; height: 36px; }
 }
+
+/* ============================================
+   Conversation List
+   ============================================ */
+.conversations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.conv-item {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.conv-item:hover {
+  border-color: var(--accent);
+  transform: translateX(-4px);
+}
+.conv-item.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+.conv-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.conv-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
