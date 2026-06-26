@@ -102,6 +102,37 @@ def get_style_keyboard():
     ])
 
 
+
+
+async def _gemini_image(prompt: str) -> bytes | None:
+    """Google Gemini Image Generation — کیفیت بالا با Imagen."""
+    if not config.GOOGLE_AI_KEY:
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+        import base64
+
+        client = genai.Client(api_key=config.GOOGLE_AI_KEY)
+
+        response = client.models.generate_images(
+            model="imagen-3.0-generate-002",
+            prompt=prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images=1,
+                aspect_ratio="1:1",
+                safety_filter_level="BLOCK_ONLY_HIGH",
+            ),
+        )
+
+        if response.generated_images:
+            img = response.generated_images[0]
+            if img.image and img.image.image_bytes:
+                return img.image.image_bytes
+    except Exception as e:
+        log.warning("⚠️ Gemini Image failed: %s", e)
+    return None
+
 PROMPT_ENHANCE_SYSTEM = (
     "Convert this image request into a detailed, descriptive English prompt for an AI image generator. "
     "Be specific about style, lighting, composition, and mood. "
@@ -141,6 +172,7 @@ async def generate(prompt: str, style: str = "realistic") -> bytes | None:
     full_prompt = f"{enhanced}, {style_suffix}"
 
     apis = [
+        ("Gemini-Imagen", _gemini_image),
         ("Pollinations-nanobanana", _pollinations_nanobanana),
         ("Pollinations-sana", _pollinations_sana),
         ("Pollinations-flux", _pollinations_flux),

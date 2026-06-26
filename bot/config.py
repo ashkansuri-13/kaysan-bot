@@ -32,6 +32,7 @@ def _list(name, default=""):
 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+GOOGLE_AI_KEY = os.getenv("GOOGLE_AI_KEY", "").strip()
 OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "").strip()
 OWNER_ID = _int("OWNER_ID", 0)
 OWNER_USERNAME = os.getenv("OWNER_USERNAME", "ashkan_surii").strip().lstrip("@")
