@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaysan AI — Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #09090b; --card: #18181b; --border: #27272a; --text: #fafafa; --muted: #71717a; --accent: #818cf8; --green: #34d399; --red: #f87171; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 { font-size: 28px; margin-bottom: 5px; }
+    .header p { color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .card-value { font-size: 32px; font-weight: 700; }
+    .card-value.green { color: var(--green); }
+    .card-value.accent { color: var(--accent); }
+    .card-value.red { color: var(--red); }
+    .section { margin-bottom: 30px; }
+    .section h2 { font-size: 18px; margin-bottom: 15px; color: var(--accent); }
+    .model-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .model-name { font-size: 13px; width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .model-bar-bg { flex: 1; height: 24px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .model-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #a78bfa); border-radius: 4px; transition: width 0.5s; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; }
+    .refresh-btn { background: var(--accent); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .refresh-btn:hover { opacity: 0.9; }
+    .status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-left: 8px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .time { font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧠 Kaysan AI Dashboard</h1>
+    <p>مدیریت و مانیتورینگ ربات <span class="status"></span></p>
+  </div>
+
+  <div class="grid" id="stats-grid"></div>
+
+  <div class="section">
+    <h2>📊 مدل‌های استفاده شده</h2>
+    <div id="models-chart"></div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <button class="refresh-btn" onclick="loadStats()">🔄 بروزرسانی</button>
+    <div class="time" id="last-update"></div>
+  </div>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+
+        const uptime = Math.floor(data.uptime_seconds / 3600);
+        const uptimeMin = Math.floor((data.uptime_seconds % 3600) / 60);
+
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="card"><div class="card-label">زمان کارکرد</div><div class="card-value accent">${uptime}h ${uptimeMin}m</div></div>
+          <div class="card"><div class="card-label">کل درخواست‌ها</div><div class="card-value">${data.total_requests.toLocaleString()}</div></div>
+          <div class="card"><div class="card-label">کل پیام‌ها</div><div class="card-value green">${data.total_messages.toLocaleString()}</div></div>
+          <div class="card"><div class="card-label">توکن‌ها</div><div class="card-value accent">${data.total_tokens.toLocaleString()}</div></div>
+          <div class="card"><div class="card-label">کاربران یکتا</div><div class="card-value">${data.unique_users}</div></div>
+          <div class="card"><div class="card-label">خطاها</div><div class="card-value red">${data.total_errors}</div></div>
+        `;
+
+        const models = data.models_used || {};
+        const maxCount = Math.max(...Object.values(models), 1);
+        const sorted = Object.entries(models).sort((a, b) => b[1] - a[1]);
+
+        document.getElementById('models-chart').innerHTML = sorted.map(([name, count]) => {
+          const pct = (count / maxCount) * 100;
+          return `<div class="model-bar"><div class="model-name">${name}</div><div class="model-bar-bg"><div class="model-bar-fill" style="width:${pct}%">${count}</div></div></div>`;
+        }).join('');
+
+        document.getElementById('last-update').textContent = `آخرین بروزرسانی: ${new Date().toLocaleTimeString('fa')}`;
+      } catch (e) {
+        document.getElementById('stats-grid').innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center">خطا در بارگذاری آمار</div>';
+      }
+    }
+
+    loadStats();
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>
