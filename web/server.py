@@ -235,9 +235,14 @@ async def handle_models(request: web.Request) -> web.Response:
     })
 
 
+async def handle_index(request: web.Request) -> web.Response:
+    return web.FileResponse(WEB_DIR / "index.html")
+
+
 _start_time = time.time()
 
 app = web.Application()
+app.router.add_get("/", handle_index)
 app.router.add_get("/health", handle_health)
 app.router.add_post("/api/chat", handle_chat)
 app.router.add_post("/api/image", handle_image)
