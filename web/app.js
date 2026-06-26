@@ -1,9 +1,79 @@
 // ============================================
-// Kaysan AI — Web App (2026)
+// Kaysan AI — Web App v3.0 (2026)
+// Telegram Mini App + Full UI/UX
 // ============================================
 
 const API = '';
+let tg = null;
+let tgUser = null;
 
+// ============================================
+// Telegram Mini App Detection
+// ============================================
+function initTelegram() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    tg.enableClosingConfirmation();
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      tgUser = tg.initDataUnsafe.user;
+      applyTelegramTheme();
+      verifyAndGreet();
+    } else if (tg.initData) {
+      fetch(`${API}/api/verify-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ init_data: tg.initData })
+      }).then(r => r.json()).then(data => {
+        if (data.ok) {
+          tgUser = data.user;
+          applyTelegramTheme();
+          verifyAndGreet();
+        }
+      }).catch(() => {});
+    }
+
+    if (tg.colorScheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+
+    tg.MainButton.hide();
+    tg.BackButton.onClick(() => tg.close());
+  }
+}
+
+function applyTelegramTheme() {
+  if (!tg) return;
+  const colors = tg.themeParams;
+  if (colors) {
+    const root = document.documentElement;
+    if (colors.bg_color) root.style.setProperty('--bg-primary', colors.bg_color);
+    if (colors.secondary_bg_color) root.style.setProperty('--bg-secondary', colors.secondary_bg_color);
+    if (colors.text_color) root.style.setProperty('--text-primary', colors.text_color);
+    if (colors.hint_color) root.style.setProperty('--text-secondary', colors.hint_color);
+    if (colors.button_color) root.style.setProperty('--accent', colors.button_color);
+    if (colors.button_text_color) {
+      document.documentElement.style.setProperty('--btn-text', colors.button_text_color);
+    }
+  }
+}
+
+function verifyAndGreet() {
+  if (!tgUser) return;
+  const name = tgUser.first_name || tgUser.username || 'کاربر';
+  const greetEl = document.getElementById('user-greeting');
+  const welcomeName = document.getElementById('welcome-name');
+  if (greetEl) greetEl.textContent = `سلام ${name}`;
+  if (welcomeName) welcomeName.textContent = name;
+}
+
+// ============================================
+// State
+// ============================================
 let chatHistory = [];
 let conversations = [];
 let currentConvId = null;
@@ -14,40 +84,44 @@ let lang = 'ku';
 let voiceInputEnabled = false;
 let voiceOutputEnabled = false;
 let streamingEnabled = true;
+let particlesEnabled = true;
+let soundsEnabled = true;
 let isRecording = false;
 let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let voiceTimer = null;
+let voiceSeconds = 0;
 
 const TONE_LABELS = ['رک', 'ملایم', 'عادی', 'رسمی', 'پرانرژی'];
-const VERBOSITY_LABELS = ['خیلی کوتاه', 'کوتاه', 'متعادل', 'مفصل'];
+const VERBOSITY_LABELS = ['کوتاه', 'متعادل', 'مفصل', 'کامل'];
 const HUMOR_LABELS = ['بدون', 'کم', 'متعادل', 'زیاد'];
 const EMOJI_LABELS = ['بدون', 'کم', 'عادی', 'زیاد'];
 const EMOTION_LABELS = ['آرام', 'عادی', 'گرم', 'پرانرژی'];
 
 const PRESETS = {
-  balanced:    { name: 'متعادل',     icon: '⚖️',  tone: 2, verbosity: 1, humor: 1, emoji: 1, emotion: 1 },
-  blunt:       { name: 'رک و راست',  icon: '🔪',  tone: 0, verbosity: 0, humor: 0, emoji: 0, emotion: 0 },
-  exaggerated: { name: 'اغراق‌آمیز', icon: '🎭',  tone: 4, verbosity: 3, humor: 3, emoji: 3, emotion: 3 },
-  friendly:    { name: 'کاربرپسند',  icon: '🤗',  tone: 2, verbosity: 1, humor: 1, emoji: 1, emotion: 2 },
-  professional:{ name: 'حرفه‌ای',    icon: '💼',  tone: 2, verbosity: 2, humor: 0, emoji: 0, emotion: 0 },
-  sarcastic:   { name: 'کنایه‌آمیز', icon: '😏',  tone: 3, verbosity: 1, humor: 3, emoji: 0, emotion: 1 },
-  caring:      { name: 'مهربان',     icon: '💕',  tone: 1, verbosity: 1, humor: 0, emoji: 1, emotion: 2 },
-  technical:   { name: 'فنی',        icon: '🔧',  tone: 3, verbosity: 2, humor: 0, emoji: 0, emotion: 0 },
+  balanced:    { name: 'متعادل',     icon: '⚖️' },
+  blunt:       { name: 'رک و راست',  icon: '🔪' },
+  exaggerated: { name: 'اغراق‌آمیز', icon: '🎭' },
+  friendly:    { name: 'کاربرپسند',  icon: '🤗' },
+  professional:{ name: 'حرفه‌ای',    icon: '💼' },
+  sarcastic:   { name: 'کنایه‌آمیز', icon: '😏' },
+  caring:      { name: 'مهربان',     icon: '💕' },
+  technical:   { name: 'فنی',        icon: '🔧' },
 };
 
+const EMOJIS = ['😀','😂','😍','🥰','😎','🤩','😭','🤔','😱','🥳','😴','🙄','👍','👎','❤️','🔥','⭐','🎉','💯','🙏','👋','💪','✌️','🤝','👀','💡','🚀','✨','🎯','🎨','💻','🤖','🧠','📚','🎵','🌙','☀️','🌈','🍕','☕','🎮','⚽','🏆','📷','✈️','🌍','💻','📱','🔮','💎','🌟'];
+
 // ============================================
-// Markdown Parser (simple, no deps)
+// Markdown Parser
 // ============================================
 function renderMarkdown(text) {
   if (!text) return '';
-  let html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`;
   });
-
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -56,38 +130,119 @@ function renderMarkdown(text) {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-
-  html = html.replace(/(<li>.*<\/li>)/gs, (match) => {
-    if (match.includes('<li>')) return '<ul>' + match + '</ul>';
-    return match;
-  });
-
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-
   html = html.replace(/\n/g, '<br>');
-
   return html;
 }
 
 // ============================================
-// Init
+// Particles
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-  initSidebar();
-  initHistoryPanel();
-  initSettingsPanel();
-  initChat();
-  initTheme();
-  initModelSelect();
-  initVoice();
-  initKeyboardShortcuts();
-  updateBadge();
-  detectSystemTheme();
-  renderConversations();
-});
+function initParticles() {
+  const canvas = document.getElementById('particles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animFrame;
 
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.5;
+      this.speedY = (Math.random() - 0.5) * 0.5;
+      this.opacity = Math.random() * 0.5 + 0.1;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(129, 140, 248, ${this.opacity})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 50; i++) particles.push(new Particle());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(129, 140, 248, ${0.1 * (1 - dist / 120)})`;
+          ctx.stroke();
+        }
+      }
+    }
+    animFrame = requestAnimationFrame(animate);
+  }
+
+  if (particlesEnabled) animate();
+
+  window.toggleParticles = (on) => {
+    particlesEnabled = on;
+    if (on) animate(); else cancelAnimationFrame(animFrame);
+  };
+}
+
+// ============================================
+// Sound Effects
+// ============================================
+function playSound(type) {
+  if (!soundsEnabled) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.1;
+
+    if (type === 'send') { osc.frequency.value = 800; osc.type = 'sine'; }
+    else if (type === 'receive') { osc.frequency.value = 600; osc.type = 'sine'; }
+    else if (type === 'error') { osc.frequency.value = 200; osc.type = 'sawtooth'; }
+
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (e) {}
+}
+
+// ============================================
+// Toast
+// ============================================
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show'); t.classList.add('hidden'); }, duration);
+}
+
+// ============================================
+// Settings
+// ============================================
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem('kay_settings') || '{}');
@@ -98,631 +253,308 @@ function loadSettings() {
     voiceInputEnabled = s.voiceInputEnabled || false;
     voiceOutputEnabled = s.voiceOutputEnabled || false;
     streamingEnabled = s.streamingEnabled !== false;
-    conversations = s.conversations || [];
-    currentConvId = s.currentConvId || null;
-    if (currentConvId) {
-      const conv = conversations.find(c => c.id === currentConvId);
-      if (conv) chatHistory = conv.messages;
-    }
-  } catch {}
+    particlesEnabled = s.particlesEnabled !== false;
+    soundsEnabled = s.soundsEnabled !== false;
+  } catch (e) {}
 }
 
 function saveSettings() {
-  if (currentConvId) {
-    const conv = conversations.find(c => c.id === currentConvId);
-    if (conv) {
-      conv.messages = chatHistory;
-      conv.updatedAt = Date.now();
-    }
-  }
   localStorage.setItem('kay_settings', JSON.stringify({
     personality, customPrompt, modelType, lang,
     voiceInputEnabled, voiceOutputEnabled, streamingEnabled,
-    conversations, currentConvId,
+    particlesEnabled, soundsEnabled,
   }));
 }
 
-function detectSystemTheme() {
-  if (!localStorage.getItem('kay_theme')) {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(prefersDark ? 'dark' : 'light');
-  }
-}
-
 // ============================================
-// Sidebar (Personality)
+// Conversations
 // ============================================
-
-function initHomeButton() {
-  const homeBtn = document.getElementById(home-btn);
-  if (homeBtn) {
-    homeBtn.onclick = () => {
-      showWelcome();
-      clearMessages();
-      currentConvId = null;
-      chatHistory = [];
-      saveSettings();
-    };
-  }
+function loadConversations() {
+  try {
+    conversations = JSON.parse(localStorage.getItem('kay_conversations') || '[]');
+  } catch (e) { conversations = []; }
 }
 
-function initSidebar() {
-  const panel = document.getElementById('personality-panel');
-  const backdrop = document.getElementById('sidebar-backdrop');
-  const toggleBtn = document.getElementById('personality-toggle');
-  const closeBtn = document.getElementById('sidebar-close');
-  const saveBtn = document.getElementById('save-btn');
-  const resetBtn = document.getElementById('reset-btn');
-  const presetList = document.getElementById('preset-list');
-
-  function open() {
-    closeAllSidebars();
-    panel.classList.add('open');
-    backdrop.classList.add('visible');
-    syncSlidersToPreset(personality);
-    document.getElementById('custom-prompt').value = customPrompt;
-  }
-
-  function close() {
-    panel.classList.remove('open');
-    backdrop.classList.remove('visible');
-  }
-
-  toggleBtn.onclick = open;
-  closeBtn.onclick = close;
-  backdrop.onclick = closeAllSidebars;
-
-  Object.entries(PRESETS).forEach(([key, p]) => {
-    const el = document.createElement('div');
-    el.className = `preset-item${personality === key ? ' active' : ''}`;
-    el.dataset.key = key;
-    el.innerHTML = `<span class="preset-icon">${p.icon}</span><span class="preset-name">${p.name}</span>`;
-    el.onclick = () => {
-      personality = key;
-      document.querySelectorAll('.preset-item').forEach(x => x.classList.remove('active'));
-      el.classList.add('active');
-      syncSlidersToPreset(key);
-    };
-    presetList.appendChild(el);
-  });
-
-  const sliders = [
-    { id: 's-tone', labels: TONE_LABELS, valId: 'val-tone' },
-    { id: 's-verbosity', labels: VERBOSITY_LABELS, valId: 'val-verbosity' },
-    { id: 's-humor', labels: HUMOR_LABELS, valId: 'val-humor' },
-    { id: 's-emoji', labels: EMOJI_LABELS, valId: 'val-emoji' },
-    { id: 's-emotion', labels: EMOTION_LABELS, valId: 'val-emotion' },
-  ];
-
-  sliders.forEach(({ id, labels, valId }) => {
-    const slider = document.getElementById(id);
-    const valEl = document.getElementById(valId);
-    slider.oninput = () => {
-      valEl.textContent = labels[slider.value];
-    };
-  });
-
-  saveBtn.onclick = () => {
-    customPrompt = document.getElementById('custom-prompt').value;
-    saveSettings();
-    updateBadge();
-    toast('تنظیمات ذخیره شد ✓');
-    close();
-  };
-
-  resetBtn.onclick = () => {
-    personality = 'balanced';
-    customPrompt = '';
-    syncSlidersToPreset('balanced');
-    document.getElementById('custom-prompt').value = '';
-    document.querySelectorAll('.preset-item').forEach(x => {
-      x.classList.toggle('active', x.dataset.key === 'balanced');
-    });
-    toast('بازنشانی شد');
-  };
+function saveConversations() {
+  localStorage.setItem('kay_conversations', JSON.stringify(conversations));
 }
 
-function syncSlidersToPreset(key) {
-  const p = PRESETS[key] || PRESETS.balanced;
-  const map = {
-    's-tone': { val: p.tone, labels: TONE_LABELS, valId: 'val-tone' },
-    's-verbosity': { val: p.verbosity, labels: VERBOSITY_LABELS, valId: 'val-verbosity' },
-    's-humor': { val: p.humor, labels: HUMOR_LABELS, valId: 'val-humor' },
-    's-emoji': { val: p.emoji, labels: EMOJI_LABELS, valId: 'val-emoji' },
-    's-emotion': { val: p.emotion, labels: EMOTION_LABELS, valId: 'val-emotion' },
-  };
-  Object.entries(map).forEach(([id, { val, labels, valId }]) => {
-    document.getElementById(id).value = val;
-    document.getElementById(valId).textContent = labels[val];
-  });
-}
-
-function updateBadge() {
-  const badge = document.getElementById('personality-badge');
-  const p = PRESETS[personality] || PRESETS.balanced;
-  badge.textContent = `${p.icon} ${p.name}`;
-}
-
-// ============================================
-// History Panel
-// ============================================
-function initHistoryPanel() {
-  const panel = document.getElementById('history-panel');
-  const backdrop = document.getElementById('sidebar-backdrop');
-  const toggleBtn = document.getElementById('history-btn');
-  const closeBtn = document.getElementById('history-close');
-
-  toggleBtn.onclick = () => {
-    closeAllSidebars();
-    renderConversations();
-    panel.classList.add('open');
-    backdrop.classList.add('visible');
-  };
-
-  closeBtn.onclick = () => {
-    panel.classList.remove('open');
-    backdrop.classList.remove('visible');
-  };
+function newConversation() {
+  currentConvId = Date.now().toString();
+  chatHistory = [];
+  conversations.unshift({ id: currentConvId, title: 'مکالمه جدید', messages: [], time: new Date().toISOString() });
+  saveConversations();
+  renderConversations();
+  showWelcome();
 }
 
 function renderConversations() {
   const list = document.getElementById('conversations-list');
-  list.innerHTML = '';
+  if (!list) return;
+  list.innerHTML = conversations.map(c => `
+    <div class="conv-item ${c.id === currentConvId ? 'active' : ''}" data-id="${c.id}">
+      <div class="conv-title">${c.title}</div>
+      <div class="conv-time">${new Date(c.time).toLocaleDateString('fa')}</div>
+    </div>
+  `).join('');
 
-  if (conversations.length === 0) {
-    list.innerHTML = '<p style="color:var(--c-text-3);text-align:center;padding:20px;font-size:13px;">هنوز مکالمه‌ای ندارید</p>';
-    return;
-  }
+  list.querySelectorAll('.conv-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const conv = conversations.find(c => c.id === el.dataset.id);
+      if (conv) {
+        currentConvId = conv.id;
+        chatHistory = conv.messages || [];
+        renderMessages();
+        closeAllSidebars();
+      }
+    });
+  });
+}
 
-  const sorted = [...conversations].sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+// ============================================
+// Messages
+// ============================================
+function showWelcome() {
+  const ws = document.getElementById('welcome-screen');
+  const mg = document.getElementById('messages');
+  if (ws) ws.style.display = 'flex';
+  if (mg) mg.innerHTML = '';
+}
 
-  sorted.forEach(conv => {
-    const el = document.createElement('div');
-    el.className = `conv-item${conv.id === currentConvId ? ' active' : ''}`;
-    const firstMsg = conv.messages[0]?.content || 'مکالمه جدید';
-    const title = firstMsg.substring(0, 40) + (firstMsg.length > 40 ? '...' : '');
-    const date = new Date(conv.updatedAt || conv.createdAt).toLocaleDateString('fa-IR');
-    el.innerHTML = `
-      <span class="conv-icon">💬</span>
-      <div class="conv-info">
-        <div class="conv-title">${title}</div>
-        <div class="conv-date">${date}</div>
+function hideWelcome() {
+  const ws = document.getElementById('welcome-screen');
+  if (ws) ws.style.display = 'none';
+}
+
+function addMessage(role, content, streaming = false) {
+  hideWelcome();
+  const messages = document.getElementById('messages');
+  const id = 'msg-' + Date.now();
+  const time = new Date().toLocaleTimeString('fa', { hour: '2-digit', minute: '2-digit' });
+  const avatar = role === 'bot' ? '<img src="/logo.png" alt="Kaysan">' : (tgUser && tgUser.photo_url ? `<img src="${tgUser.photo_url}" alt="User">` : '👤');
+
+  const html = `
+    <div class="msg ${role}" id="${id}">
+      <div class="msg-avatar">${avatar}</div>
+      <div>
+        <div class="msg-bubble">${streaming ? '<div class="streaming-text"></div>' : renderMarkdown(content)}</div>
+        <div class="msg-time">${time}</div>
+        <div class="msg-actions">
+          <button class="msg-action" onclick="copyMessage('${id}')">📋 کپی</button>
+          <button class="msg-action" onclick="speakMessage('${id}')">🔊 صدا</button>
+        </div>
       </div>
-      <button class="conv-delete" data-id="${conv.id}" aria-label="حذف">✕</button>
-    `;
-    el.onclick = (e) => {
-      if (e.target.closest('.conv-delete')) return;
-      switchConversation(conv.id);
-    };
-    el.querySelector('.conv-delete').onclick = (e) => {
-      e.stopPropagation();
-      deleteConversation(conv.id);
-    };
-    list.appendChild(el);
-  });
+    </div>
+  `;
+  messages.insertAdjacentHTML('beforeend', html);
+  messages.scrollTop = messages.scrollHeight;
+  return id;
 }
 
-function newConversation() {
-  currentConvId = 'conv_' + Date.now();
-  chatHistory = [];
-  conversations.push({
-    id: currentConvId,
-    messages: [],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-  saveSettings();
-  clearMessages();
-  showWelcome();
-  renderConversations();
-  toast('مکالمه جدید ✨');
+function updateStreamingMessage(id, text) {
+  const el = document.querySelector(`#${id} .streaming-text`);
+  if (el) el.innerHTML = renderMarkdown(text);
+  const msgs = document.getElementById('messages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
-function switchConversation(id) {
-  currentConvId = id;
-  const conv = conversations.find(c => c.id === id);
-  chatHistory = conv ? conv.messages : [];
-  saveSettings();
-  clearMessages();
-  if (chatHistory.length > 0) {
-    hideWelcome();
-    chatHistory.forEach(m => addMsg(m.role, m.content, false));
-    scrollToBottom();
-  } else {
-    showWelcome();
+function copyMessage(id) {
+  const el = document.querySelector(`#${id} .msg-bubble`);
+  if (el) {
+    navigator.clipboard.writeText(el.textContent);
+    showToast('کپی شد!');
   }
-  closeAllSidebars();
-  renderConversations();
 }
 
-function deleteConversation(id) {
-  conversations = conversations.filter(c => c.id !== id);
-  if (currentConvId === id) {
-    currentConvId = null;
-    chatHistory = [];
-    clearMessages();
-    showWelcome();
+function speakMessage(id) {
+  const el = document.querySelector(`#${id} .msg-bubble`);
+  if (el && 'speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(el.textContent);
+    utter.lang = lang === 'ku' ? 'ku' : lang === 'fa' ? 'fa' : 'en';
+    speechSynthesis.speak(utter);
   }
-  saveSettings();
-  renderConversations();
-  toast('مکالمه حذف شد');
-}
-
-function clearAllConversations() {
-  if (!confirm('آیا مطمئنید؟ همه مکالمات حذف خواهند شد.')) return;
-  conversations = [];
-  currentConvId = null;
-  chatHistory = [];
-  saveSettings();
-  clearMessages();
-  showWelcome();
-  renderConversations();
-  closeAllSidebars();
-  toast('همه مکالمات حذف شد');
-}
-
-// ============================================
-// Settings Panel
-// ============================================
-function initSettingsPanel() {
-  const panel = document.getElementById('settings-panel');
-  const backdrop = document.getElementById('sidebar-backdrop');
-  const toggleBtn = document.getElementById('settings-btn');
-  const closeBtn = document.getElementById('settings-close');
-
-  toggleBtn.onclick = () => {
-    closeAllSidebars();
-    panel.classList.add('open');
-    backdrop.classList.add('visible');
-  };
-
-  closeBtn.onclick = () => {
-    panel.classList.remove('open');
-    backdrop.classList.remove('visible');
-  };
-
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === lang);
-    btn.onclick = () => {
-      lang = btn.dataset.lang;
-      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      saveSettings();
-      toast('زبان تغییر کرد');
-    };
-  });
-
-  document.getElementById('voice-input-toggle').checked = voiceInputEnabled;
-  document.getElementById('voice-output-toggle').checked = voiceOutputEnabled;
-  document.getElementById('streaming-toggle').checked = streamingEnabled;
-
-  document.getElementById('voice-input-toggle').onchange = (e) => {
-    voiceInputEnabled = e.target.checked;
-    saveSettings();
-    updateVoiceBtn();
-  };
-
-  document.getElementById('voice-output-toggle').onchange = (e) => {
-    voiceOutputEnabled = e.target.checked;
-    saveSettings();
-  };
-
-  document.getElementById('streaming-toggle').onchange = (e) => {
-    streamingEnabled = e.target.checked;
-    saveSettings();
-  };
-
-  document.getElementById('clear-all-btn').onclick = clearAllConversations;
-}
-
-function closeAllSidebars() {
-  document.getElementById('personality-panel').classList.remove('open');
-  document.getElementById('history-panel').classList.remove('open');
-  document.getElementById('settings-panel').classList.remove('open');
-  document.getElementById('sidebar-backdrop').classList.remove('visible');
 }
 
 // ============================================
 // Chat
 // ============================================
-function initChat() {
+async function sendMessage(text) {
+  if (!text.trim()) return;
+  playSound('send');
+
+  addMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
   const input = document.getElementById('msg-input');
-  const sendBtn = document.getElementById('send-btn');
+  if (input) { input.value = ''; input.style.height = 'auto'; }
+  document.getElementById('send-btn').disabled = true;
 
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-    sendBtn.disabled = !input.value.trim();
-  });
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.classList.remove('hidden');
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (input.value.trim()) send();
-    }
-  });
-
-  sendBtn.onclick = () => { if (input.value.trim()) send(); };
-
-  document.querySelectorAll('.quick-card').forEach(btn => {
-    btn.onclick = () => {
-      input.value = btn.dataset.msg;
-      input.dispatchEvent(new Event('input'));
-      send();
-    };
-  });
-
-  document.getElementById('new-chat-btn').onclick = newConversation;
-
-  if (chatHistory.length > 0) {
-    hideWelcome();
-    chatHistory.forEach(m => addMsg(m.role, m.content, false));
-    scrollToBottom();
-  }
-
-  async function send() {
-    const text = input.value.trim();
-    if (!text) return;
-
-    input.value = '';
-    input.style.height = 'auto';
-    sendBtn.disabled = true;
-
-    hideWelcome();
-    addMsg('user', text);
-    chatHistory.push({ role: 'user', content: text });
-
-    if (!currentConvId) {
-      currentConvId = 'conv_' + Date.now();
-      conversations.push({
-        id: currentConvId,
-        messages: [],
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    }
-
-    showTyping();
-    scrollToBottom();
-
-    try {
-      if (streamingEnabled) {
-        await sendStreaming(text);
-      } else {
-        await sendRegular(text);
-      }
-    } catch {
-      hideTyping();
-      addMsg('bot', 'خطا در اتصال. دوباره تلاش کنید.');
-    }
-
-    saveSettings();
-    scrollToBottom();
-  }
-
-  async function sendRegular(text) {
-    const res = await fetch(`${API}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildPayload(text)),
-    });
-
-    const data = await res.json();
-    hideTyping();
-
-    if (data.error) {
-      addMsg('bot', `خطا: ${data.error}`);
-    } else {
-      addMsg('bot', data.reply);
-      chatHistory.push({ role: 'assistant', content: data.reply });
-      if (voiceOutputEnabled) speak(data.reply);
-    }
-  }
-
-  async function sendStreaming(text) {
-    const res = await fetch(`${API}/api/chat/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildPayload(text)),
-    });
-
-    if (!res.ok) {
-      hideTyping();
-      const data = await res.json().catch(() => ({}));
-      addMsg('bot', `خطا: ${data.error || res.statusText}`);
-      return;
-    }
-
-    const botMsgEl = createBotMsgElement();
-    hideTyping();
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const dataStr = line.slice(6);
-        if (dataStr === '[DONE]') continue;
-
-        try {
-          const data = JSON.parse(dataStr);
-          if (data.chunk) {
-            fullText += data.chunk;
-            botMsgEl.querySelector('.msg-content').innerHTML = renderMarkdown(fullText);
-            scrollToBottom();
-          }
-          if (data.done) {
-            chatHistory.push({ role: 'assistant', content: fullText });
-            if (voiceOutputEnabled) speak(fullText);
-          }
-        } catch {}
-      }
-    }
-  }
-
-  function buildPayload(text) {
-    const p = PRESETS[personality] || PRESETS.balanced;
-    return {
-      message: text,
-      lang,
-      history: chatHistory.slice(-10),
-      model_type: modelType,
-      personality,
-      custom_prompt: customPrompt,
-      tone: parseInt(document.getElementById('s-tone').value),
-      verbosity: parseInt(document.getElementById('s-verbosity').value),
-      humor: parseInt(document.getElementById('s-humor').value),
-      emoji: parseInt(document.getElementById('s-emoji').value),
-      emotion: parseInt(document.getElementById('s-emotion').value),
-    };
-  }
-}
-
-function addMsg(role, text, animate = true) {
-  const container = document.getElementById('messages');
-  const el = document.createElement('div');
-  el.className = `msg ${role}`;
-  if (!animate) el.style.animation = 'none';
-
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar';
-  avatar.textContent = role === 'user' ? '👤' : '🧠';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-
-  const content = document.createElement('div');
-  content.className = 'msg-content';
-
-  if (role === 'bot') {
-    content.innerHTML = renderMarkdown(text);
-  } else {
-    content.textContent = text;
-  }
-
-  body.appendChild(content);
-
-  if (role === 'bot') {
-    const actions = document.createElement('div');
-    actions.className = 'msg-actions';
-    actions.innerHTML = `
-      <button class="msg-action-btn copy-btn" title="کپی" aria-label="کپی">📋</button>
-      <button class="msg-action-btn regenerate-btn" title="بازسازی" aria-label="بازسازی">🔄</button>
-    `;
-    actions.querySelector('.copy-btn').onclick = () => {
-      navigator.clipboard.writeText(text).then(() => toast('کپی شد ✓'));
-    };
-    actions.querySelector('.regenerate-btn').onclick = () => regenerateLast();
-    body.appendChild(actions);
-  }
-
-  el.appendChild(avatar);
-  el.appendChild(body);
-  container.appendChild(el);
-}
-
-function createBotMsgElement() {
-  const container = document.getElementById('messages');
-  const el = document.createElement('div');
-  el.className = 'msg bot';
-
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar';
-  avatar.textContent = '🧠';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-
-  const content = document.createElement('div');
-  content.className = 'msg-content';
-  content.textContent = '...';
-
-  body.appendChild(content);
-  el.appendChild(avatar);
-  el.appendChild(body);
-  container.appendChild(el);
-
-  return el;
-}
-
-async function regenerateLast() {
-  if (chatHistory.length < 2) return;
-
-  const lastUserMsg = chatHistory[chatHistory.length - 2];
-  if (!lastUserMsg || lastUserMsg.role !== 'user') return;
-
-  chatHistory.pop();
-  const container = document.getElementById('messages');
-  const lastBot = container.querySelector('.msg.bot:last-of-type');
-  if (lastBot) lastBot.remove();
-
-  showTyping();
-  scrollToBottom();
+  const stream = streamingEnabled;
 
   try {
-    const res = await fetch(`${API}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: lastUserMsg.content,
-        lang,
-        history: chatHistory.slice(-10),
-        model_type: modelType,
-        personality,
-        custom_prompt: customPrompt,
-      }),
-    });
-    const data = await res.json();
-    hideTyping();
+    const body = {
+      message: text,
+      model_type: modelType,
+      personality: personality,
+      custom_prompt: customPrompt,
+      stream: stream,
+    };
+    if (tg && tg.initData) body.init_data = tg.initData;
 
-    if (data.error) {
-      addMsg('bot', `خطا: ${data.error}`);
+    const msgId = addMessage('bot', '', true);
+
+    if (stream) {
+      const res = await fetch(`${API}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.done) break;
+              full += data.text;
+              updateStreamingMessage(msgId, full);
+            } catch (e) {}
+          }
+        }
+      }
+
+      chatHistory.push({ role: 'assistant', content: full });
     } else {
-      addMsg('bot', data.reply);
-      chatHistory.push({ role: 'assistant', content: data.reply });
+      const res = await fetch(`${API}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const bubble = document.querySelector(`#${msgId} .msg-bubble`);
+      if (bubble) bubble.innerHTML = renderMarkdown(data.response);
+      chatHistory.push({ role: 'assistant', content: data.response });
     }
-    saveSettings();
-    scrollToBottom();
-  } catch {
-    hideTyping();
-    addMsg('bot', 'خطا در بازسازی پاسخ.');
+
+    playSound('receive');
+  } catch (e) {
+    playSound('error');
+    showToast('خطا در ارسال پیام');
+  } finally {
+    if (typing) typing.classList.add('hidden');
+    if (currentConvId) {
+      const conv = conversations.find(c => c.id === currentConvId);
+      if (conv) {
+        conv.messages = chatHistory;
+        if (chatHistory.length === 1) conv.title = text.substring(0, 30);
+        saveConversations();
+      }
+    }
   }
 }
 
-function clearMessages() {
-  document.getElementById('messages').innerHTML = '';
+// ============================================
+// Voice Input
+// ============================================
+function initVoice() {
+  const voiceBtn = document.getElementById('voice-btn');
+  if (!voiceBtn) return;
+
+  voiceBtn.addEventListener('click', () => {
+    if (isRecording) { stopRecording(); }
+    else { startRecording(); }
+  });
 }
 
-function showWelcome() {
-  document.getElementById('welcome-screen').classList.remove('hidden');
+function startRecording() {
+  if (!('MediaRecorder' in window)) { showToast('ورودی صوتی پشتیبانی نمی‌شود'); return; }
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    isRecording = true;
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    voiceSeconds = 0;
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      isRecording = false;
+    };
+
+    mediaRecorder.start();
+
+    const overlay = document.getElementById('voice-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+
+    const waveform = document.getElementById('voice-waveform');
+    if (waveform) {
+      waveform.innerHTML = Array(20).fill(0).map((_, i) =>
+        `<div class="bar" style="animation-delay:${i * 0.05}s"></div>`
+      ).join('');
+    }
+
+    voiceTimer = setInterval(() => {
+      voiceSeconds++;
+      const m = Math.floor(voiceSeconds / 60).toString().padStart(2, '0');
+      const s = (voiceSeconds % 60).toString().padStart(2, '0');
+      const timerEl = document.getElementById('voice-timer');
+      if (timerEl) timerEl.textContent = `${m}:${s}`;
+    }, 1000);
+  }).catch(() => showToast('اجازه دسترسی به میکروفون داده نشد'));
 }
 
-function hideWelcome() {
-  document.getElementById('welcome-screen').classList.add('hidden');
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  clearInterval(voiceTimer);
+  const overlay = document.getElementById('voice-overlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
-function showTyping() {
-  document.getElementById('typing-indicator').classList.remove('hidden');
-}
+// ============================================
+// Emoji Picker
+// ============================================
+function initEmojiPicker() {
+  const btn = document.getElementById('emoji-btn');
+  const picker = document.getElementById('emoji-picker');
+  const grid = document.getElementById('emoji-grid');
+  const search = document.getElementById('emoji-search-input');
+  const input = document.getElementById('msg-input');
 
-function hideTyping() {
-  document.getElementById('typing-indicator').classList.add('hidden');
-}
+  if (!btn || !picker || !grid) return;
 
-function scrollToBottom() {
-  const area = document.getElementById('chat-area');
-  requestAnimationFrame(() => {
-    area.scrollTop = area.scrollHeight;
+  function renderEmojis(filter = '') {
+    const filtered = EMOJIS.filter(e => !filter || e.includes(filter));
+    grid.innerHTML = filtered.map(e => `<div class="emoji-item" data-emoji="${e}">${e}</div>`).join('');
+    grid.querySelectorAll('.emoji-item').forEach(el => {
+      el.addEventListener('click', () => {
+        input.value += el.dataset.emoji;
+        input.focus();
+        picker.classList.add('hidden');
+      });
+    });
+  }
+
+  renderEmojis();
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    picker.classList.toggle('hidden');
+  });
+  if (search) search.addEventListener('input', () => renderEmojis(search.value));
+  document.addEventListener('click', (e) => {
+    if (!picker.contains(e.target) && e.target !== btn) picker.classList.add('hidden');
   });
 }
 
@@ -730,168 +562,158 @@ function scrollToBottom() {
 // Theme
 // ============================================
 function initTheme() {
-  const saved = localStorage.getItem('kay_theme') || 'dark';
-  applyTheme(saved);
-
-  document.getElementById('theme-toggle').onclick = () => {
-    const current = document.body.classList.contains('light') ? 'light' : 'dark';
+  const toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('kay_theme', next);
-  };
-}
-
-function applyTheme(theme) {
-  document.body.classList.toggle('light', theme === 'light');
-  document.getElementById('theme-icon').textContent = theme === 'dark' ? '🌙' : '☀️';
+    if (tg) tg.switchHeaderTheme(next);
+  });
+  const saved = localStorage.getItem('kay_theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
 }
 
 // ============================================
-// Model
+// Init
 // ============================================
-function initModelSelect() {
-  const sel = document.getElementById('model-select');
-  sel.value = modelType;
-  sel.onchange = () => {
-    modelType = sel.value;
+document.addEventListener('DOMContentLoaded', () => {
+  initTelegram();
+  loadSettings();
+  loadConversations();
+  initParticles();
+  initTheme();
+  initVoice();
+  initEmojiPicker();
+
+  setTimeout(() => {
+    const ls = document.getElementById('loading-screen');
+    if (ls) ls.classList.add('hidden');
+  }, 1500);
+
+  renderConversations();
+  verifyAndGreet();
+
+  const input = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  if (input) {
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      sendBtn.disabled = !input.value.trim();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim()) sendMessage(input.value);
+      }
+    });
+  }
+
+  if (sendBtn) sendBtn.addEventListener('click', () => {
+    if (input.value.trim()) sendMessage(input.value);
+  });
+
+  document.querySelectorAll('.quick-card').forEach(btn => {
+    btn.addEventListener('click', () => sendMessage(btn.dataset.msg));
+  });
+
+  document.getElementById('new-chat-btn')?.addEventListener('click', newConversation);
+  document.getElementById('history-btn')?.addEventListener('click', () => {
+    document.getElementById('history-panel')?.classList.toggle('open');
+    document.getElementById('sidebar-backdrop')?.classList.toggle('active');
+  });
+  document.getElementById('personality-toggle')?.addEventListener('click', () => {
+    document.getElementById('personality-panel')?.classList.toggle('open');
+    document.getElementById('sidebar-backdrop')?.classList.toggle('active');
+  });
+  document.getElementById('settings-btn')?.addEventListener('click', () => {
+    document.getElementById('settings-panel')?.classList.toggle('open');
+    document.getElementById('sidebar-backdrop')?.classList.toggle('active');
+  });
+
+  document.querySelectorAll('.sidebar-close, #history-close, #settings-close').forEach(btn => {
+    btn?.addEventListener('click', closeAllSidebars);
+  });
+  document.getElementById('sidebar-backdrop')?.addEventListener('click', closeAllSidebars);
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      lang = btn.dataset.lang;
+      saveSettings();
+    });
+  });
+
+  document.getElementById('save-btn')?.addEventListener('click', () => {
+    customPrompt = document.getElementById('custom-prompt')?.value || '';
     saveSettings();
-  };
-}
+    showToast('تنظیمات ذخیره شد!');
+    closeAllSidebars();
+  });
 
-// ============================================
-// Voice
-// ============================================
-function initVoice() {
-  const voiceBtn = document.getElementById('voice-btn');
-  updateVoiceBtn();
+  document.getElementById('reset-btn')?.addEventListener('click', () => {
+    personality = 'balanced';
+    customPrompt = '';
+    saveSettings();
+    showToast('بازنشانی شد');
+  });
 
-  voiceBtn.onclick = () => {
-    if (!voiceInputEnabled) {
-      toast('ورودی صوتی غیرفعال است. از تنظیمات فعال کنید.');
-      return;
-    }
-    toggleRecording();
-  };
-
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = lang === 'ku' ? 'ar-IQ' : lang === 'fa' ? 'fa-IR' : 'en-US';
-
-    recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      document.getElementById('msg-input').value = text;
-      document.getElementById('msg-input').dispatchEvent(new Event('input'));
-    };
-
-    recognition.onend = () => {
-      isRecording = false;
-      document.getElementById('voice-btn').classList.remove('recording');
-    };
-
-    recognition.onerror = () => {
-      isRecording = false;
-      document.getElementById('voice-btn').classList.remove('recording');
-    };
-  }
-}
-
-function updateVoiceBtn() {
-  const voiceBtn = document.getElementById('voice-btn');
-  voiceBtn.style.display = voiceInputEnabled ? 'flex' : 'none';
-}
-
-function toggleRecording() {
-  if (!recognition) {
-    toast('مرورگر شما از تبدیل گفتار پشتیبانی نمی‌کند.');
-    return;
-  }
-
-  if (isRecording) {
-    recognition.stop();
-    isRecording = false;
-    document.getElementById('voice-btn').classList.remove('recording');
-  } else {
-    recognition.lang = lang === 'ku' ? 'ar-IQ' : lang === 'fa' ? 'fa-IR' : 'en-US';
-    recognition.start();
-    isRecording = true;
-    document.getElementById('voice-btn').classList.add('recording');
-  }
-}
-
-function speak(text) {
-  if (!voiceOutputEnabled || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text.replace(/[#*_`>\[\]]/g, ''));
-  utterance.lang = lang === 'ku' ? 'ar-IQ' : lang === 'fa' ? 'fa-IR' : 'en-US';
-  utterance.rate = 1;
-  window.speechSynthesis.speak(utterance);
-}
-
-// ============================================
-// Keyboard Shortcuts
-// ============================================
-function initKeyboardShortcuts() {
-  const overlay = document.getElementById('keyboard-shortcuts');
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeAllSidebars();
-      overlay.classList.add('hidden');
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'k') {
-        e.preventDefault();
-        document.getElementById('msg-input').focus();
-      }
-      if (e.key === '/') {
-        e.preventDefault();
-        overlay.classList.toggle('hidden');
-      }
-      if (e.key === 'n') {
-        e.preventDefault();
-        newConversation();
-      }
-      if (e.shiftKey && e.key === 'C') {
-        e.preventDefault();
-        copyLastBotMessage();
-      }
+  document.getElementById('clear-all-btn')?.addEventListener('click', () => {
+    if (confirm('همه مکالمات پاک شوند؟')) {
+      conversations = [];
+      saveConversations();
+      newConversation();
+      showToast('پاک شد');
     }
   });
 
-  document.getElementById('close-shortcuts').onclick = () => {
-    overlay.classList.add('hidden');
-  };
+  document.getElementById('voice-cancel')?.addEventListener('click', stopRecording);
+  document.getElementById('voice-send')?.addEventListener('click', () => {
+    stopRecording();
+    showToast('پیام صوتی ارسال شد');
+  });
 
-  overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.classList.add('hidden');
-  };
-}
+  document.getElementById('particles-toggle')?.addEventListener('change', (e) => {
+    particlesEnabled = e.target.checked;
+    saveSettings();
+    if (window.toggleParticles) window.toggleParticles(particlesEnabled);
+  });
 
-function copyLastBotMessage() {
-  const msgs = document.querySelectorAll('.msg.bot .msg-content');
-  if (msgs.length === 0) {
-    toast('پاسخی برای کپی وجود ندارد');
-    return;
+  document.getElementById('sounds-toggle')?.addEventListener('change', (e) => {
+    soundsEnabled = e.target.checked;
+    saveSettings();
+  });
+
+  const presetList = document.getElementById('preset-list');
+  if (presetList) {
+    presetList.innerHTML = Object.entries(PRESETS).map(([key, p]) => `
+      <div class="preset-card ${personality === key ? 'active' : ''}" data-preset="${key}">
+        <div class="preset-icon">${p.icon}</div>
+        <div class="preset-name">${p.name}</div>
+      </div>
+    `).join('');
+    presetList.querySelectorAll('.preset-card').forEach(card => {
+      card.addEventListener('click', () => {
+        presetList.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        personality = card.dataset.preset;
+        saveSettings();
+        showToast(`شخصیت: ${PRESETS[personality].name}`);
+      });
+    });
   }
-  const last = msgs[msgs.length - 1];
-  navigator.clipboard.writeText(last.textContent).then(() => toast('آخرین پاسخ کپی شد ✓'));
-}
 
-// ============================================
-// Toast
-// ============================================
-function toast(msg, isError = false) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = isError ? 'toast error' : 'toast';
-  el.classList.remove('hidden');
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => {
-    el.classList.remove('show');
-    setTimeout(() => el.classList.add('hidden'), 300);
-  }, 2000);
+  const badge = document.getElementById('personality-badge');
+  if (badge && PRESETS[personality]) {
+    badge.textContent = `${PRESETS[personality].icon} ${PRESETS[personality].name}`;
+  }
+});
+
+function closeAllSidebars() {
+  document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('open'));
+  document.getElementById('sidebar-backdrop')?.classList.remove('active');
 }
