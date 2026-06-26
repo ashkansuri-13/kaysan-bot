@@ -29,15 +29,14 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check kaysan-bot/ --select E,F,W --ignore E501
+          ruff check bot/ web/ --select E,F,W --ignore E501
 
       - name: Run tests
         env:
           BOT_TOKEN: "test:fake"
           OPENROUTER_KEY: "fake_key"
         run: |
-          cd kaysan-bot
-          python -m pytest test_all.py -v --tb=short -x
+          python -m pytest tests/ -v --tb=short -x -q
 
   deploy:
     needs: test
